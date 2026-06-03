@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koshas Vision A: Nocturne</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Instrument Serif', 'serif'],
+                    },
+                    colors: {
+                        obsidian: {
+                            900: '#07080A',
+                            800: '#0D0E12',
+                            700: '#15171C',
+                            600: '#22252C',
+                        },
+                        forest: {
+                            400: '#5A7D6C',
+                            500: '#3F6150',
+                            900: '#14221B',
+                        },
+                        accent: {
+                            DEFAULT: '#FF6B6B',
+                            glow: 'rgba(255, 107, 107, 0.4)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: theme('colors.obsidian.900');
+            color: #E2E4E9;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(63, 97, 80, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(255, 107, 107, 0.08) 0%, transparent 50%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app-window {
+            height: calc(100vh - 2rem);
+            margin: 1rem;
+            border-radius: 1.5rem;
+            background: rgba(13, 14, 18, 0.6);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            background: rgba(7, 8, 10, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.75rem;
+            color: #8F95A3;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .nav-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .nav-link.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .topbar {
+            height: 4.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(180deg, rgba(13, 14, 18, 0.8) 0%, transparent 100%);
+        }
+
+        .cmd-bar {
+            background: rgba(21, 23, 28, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            padding: 0.5rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 400px;
+            color: #8F95A3;
+            transition: all 0.3s ease;
+        }
+        .cmd-bar:focus-within {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(21, 23, 28, 0.9);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+        .cmd-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .content-scroll {
+            overflow-y: auto;
+            padding: 2rem;
+        }
+        .content-scroll::-webkit-scrollbar { width: 6px; }
+        .content-scroll::-webkit-scrollbar-track { background: transparent; }
+        .content-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        .masonry {
+            columns: 2;
+            column-gap: 1.5rem;
+        }
+
+        .card {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+            background: rgba(21, 23, 28, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            background: rgba(34, 37, 44, 0.6);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-img {
+            width: calc(100% + 2.5rem);
+            margin: -1.25rem -1.25rem 1.25rem -1.25rem;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 1.25rem 1.25rem 0 0;
+            opacity: 0.85;
+            transition: opacity 0.3s;
+        }
+        .card:hover .card-img {
+            opacity: 1;
+        }
+
+        .tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.4rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: #8F95A3;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .tag.ai-generated {
+            background: rgba(90, 125, 108, 0.15);
+            color: theme('colors.forest.400');
+            border: 1px solid rgba(90, 125, 108, 0.3);
+        }
+
+        .inspector {
+            background: rgba(7, 8, 10, 0.6);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .serif-heading {
+            font-family: 'Instrument Serif', serif;
+            letter-spacing: 0.01em;
+        }
+        
+        .blur-pill {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 99px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-window">
+        
+        <aside class="sidebar p-5">
+            <div class="flex items-center gap-3 mb-10 px-2 mt-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-forest-400 to-forest-900 flex items-center justify-center border border-forest-400/50 shadow-[0_0_15px_rgba(90,125,108,0.4)]">
+                    <span class="font-serif italic text-white text-xl">K</span>
+                </div>
+                <span class="font-serif text-2xl tracking-wide text-white">Koshas</span>
+            </div>
+
+            <div class="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest mb-3 px-3">Sheaths</div>
+            <nav class="space-y-1 mb-8">
+                <a class="nav-link active">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    Collect
+                </a>
+                <a class="nav-link">
+                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                    Notes
+                </a>
+                <a class="nav-link">
+                    <i data-lucide="git-merge" class="w-4 h-4"></i>
+                    Graph
+                </a>
+            </nav>
+
+            <div class="flex items-center justify-between text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest mb-3 px-3">
+                <span>Spaces</span>
+                <i data-lucide="plus" class="w-3 h-3 hover:text-white cursor-pointer transition"></i>
+            </div>
+            <nav class="space-y-1 flex-1">
+                <a class="nav-link"><div class="w-1.5 h-1.5 rounded-full bg-forest-400"></div> Architecture</a>
+                <a class="nav-link"><div class="w-1.5 h-1.5 rounded-full bg-accent"></div> Aesthetic References</a>
+                <a class="nav-link"><div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div> AI Research</a>
+            </nav>
+
+            <div class="mt-auto pt-4 px-2">
+                <button class="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition flex justify-center items-center gap-2 text-white">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> New Item
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex flex-col relative">
+            
+            <header class="topbar">
+                <div>
+                    <h1 class="serif-heading text-3xl text-white">Everything</h1>
+                </div>
+
+                <div class="cmd-bar">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                    <input type="text" placeholder="Search knowledge or type a command... (Cmd+K)">
+                    <span class="text-[0.65rem] border border-white/10 px-1.5 py-0.5 rounded text-gray-500 font-mono">⌘K</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button class="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center border border-white/5 hover:bg-white/10 transition">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-forest-400"></i>
+                    </button>
+                    <img src="https://i.pravatar.cc/150?img=11" alt="User" class="w-9 h-9 rounded-full border border-white/20">
+                </div>
+            </header>
+
+            <div class="content-scroll flex-1">
+                
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex gap-2">
+                        <span class="blur-pill text-white border-white/20 bg-white/10">All Types</span>
+                        <span class="blur-pill">Articles</span>
+                        <span class="blur-pill">Images</span>
+                        <span class="blur-pill">Notes</span>
+                    </div>
+                    <div class="text-sm text-gray-500">12 items imported today</div>
+                </div>
+
+                <div class="masonry">
+                    
+                    <div class="card">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex gap-1.5">
+                                <span class="tag">Article</span>
+                                <span class="tag ai-generated"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Tagged</span>
+                            </div>
+                            <i data-lucide="bookmark" class="w-4 h-4 text-gray-500"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-white mb-2 leading-tight">Dark Mode: The Psychology of Immersive Interfaces</h3>
+                        <p class="text-sm text-gray-400 line-clamp-3 mb-4">
+                            Exploring why developers and designers gravitate toward dark interfaces, the impact on cognitive load, and the spatial perception of deep blacks versus stark whites in digital environments.
+                        </p>
+                        <div class="flex gap-2 items-center">
+                            <div class="w-5 h-5 rounded bg-white/10 flex items-center justify-center shrink-0">
+                                <i data-lucide="globe" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                            <span class="text-xs text-gray-500 truncate">uxdesign.cc</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" alt="Abstract" class="card-img">
+                        <div class="absolute top-4 right-4">
+                            <span class="blur-pill text-white/90 font-medium">Inspo</span>
+                        </div>
+                        <h3 class="font-medium text-white mb-1">Generative spatial flow</h3>
+                        <div class="flex gap-1.5 flex-wrap">
+                            <span class="text-[10px] text-gray-500">#architecture</span>
+                            <span class="text-[10px] text-gray-500">#lighting</span>
+                        </div>
+                    </div>
+
+                    <div class="card bg-gradient-to-br from-obsidian-700 to-obsidian-800 border-l-2 border-l-forest-400">
+                        <div class="flex gap-1.5 mb-3">
+                            <span class="tag bg-forest-400/20 text-forest-400 border-none">Note</span>
+                        </div>
+                        <h3 class="serif-heading text-2xl text-white italic mb-2">Thoughts on Capture</h3>
+                        <p class="text-sm text-gray-300 font-medium leading-relaxed">
+                            "Saving anything must be nearly frictionless. Organization emerges from AI enrichment, saved searches, tags, and connections — not from manual folder structures at capture time."
+                        </p>
+                        <div class="mt-4 flex items-center gap-2 text-xs text-gray-500">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i> Edited 2 hours ago
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="tag">Product</span>
+                            <span class="text-accent font-mono text-xs">$399</span>
+                        </div>
+                        <h3 class="font-medium text-white mb-1">Teenage Engineering ET-1</h3>
+                        <p class="text-xs text-gray-400 mb-3">Minimalist desk accessory and speaker.</p>
+                        <div class="flex gap-1.5 mt-2">
+                            <span class="tag ai-generated">Industrial Design</span>
+                        </div>
+                    </div>
+
+                    <div class="card flex gap-4 items-center">
+                        <div class="w-12 h-16 bg-white/5 rounded border border-white/10 flex flex-col justify-center items-center text-accent shrink-0">
+                            <i data-lucide="file-text" class="w-5 h-5 mb-1"></i>
+                            <span class="text-[8px] font-bold">PDF</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-white text-sm leading-tight mb-1">Dharmic Design Monograph.pdf</h3>
+                            <p class="text-xs text-gray-500">24 pages • Indexed</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <aside class="inspector">
+            
+            <div class="w-full h-48 rounded-xl overflow-hidden mb-6 relative group border border-white/10">
+                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                <div class="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur rounded shadow-lg text-white">
+                    <i data-lucide="scan-text" class="w-4 h-4"></i>
+                </div>
+            </div>
+
+            <span class="text-[0.65rem] font-bold tracking-widest text-forest-400 uppercase mb-2 block">Image</span>
+            <h2 class="serif-heading text-3xl text-white leading-tight mb-2">Generative spatial flow</h2>
+            <a href="#" class="text-xs text-gray-400 hover:text-white transition flex items-center gap-1 mb-8">
+                archdaily.com/generative <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+
+            <div class="mb-8 p-4 rounded-xl border border-forest-400/20 bg-forest-900/40 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-forest-500"></div>
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-forest-400"></i>
+                    <span class="text-[0.65rem] font-bold text-forest-400 uppercase tracking-widest">AI Enrichment</span>
+                </div>
+                <p class="text-sm text-gray-300 leading-relaxed mb-3">
+                    Image features abstract architectural forms with heavy emphasis on volumetric lighting and terracotta gradients.
+                </p>
+                <div class="flex flex-wrap gap-1.5">
+                    <span class="tag ai-generated">Architecture</span>
+                    <span class="tag ai-generated">Abstract</span>
+                    <span class="tag ai-generated">Lighting</span>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <span class="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest mb-3 block">Connected to</span>
+                <div class="space-y-2">
+                    <div class="p-2.5 rounded-lg bg-white/5 border border-white/5 hover:border-white/20 transition cursor-pointer flex items-center gap-3">
+                        <i data-lucide="pen-tool" class="w-4 h-4 text-gray-400"></i>
+                        <span class="text-sm text-white font-medium">Thoughts on Capture</span>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-white/5 border border-white/5 hover:border-white/20 transition cursor-pointer flex items-center gap-3">
+                        <i data-lucide="file-text" class="w-4 h-4 text-accent"></i>
+                        <span class="text-sm text-white font-medium">Dharmic Design Monograph</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <span class="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest mb-3 block">Extracted Colors</span>
+                <div class="flex gap-2">
+                    <div class="w-8 h-8 rounded-full border border-white/10" style="background: #111214;"></div>
+                    <div class="w-8 h-8 rounded-full border border-white/10" style="background: #9c6c59;"></div>
+                    <div class="w-8 h-8 rounded-full border border-white/10" style="background: #394247;"></div>
+                    <div class="w-8 h-8 rounded-full border border-white/10" style="background: #e2ded7;"></div>
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

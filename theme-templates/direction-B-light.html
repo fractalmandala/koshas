@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koshas Vision C: Spatial Zen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts: Plus Jakarta Sans for UI, Newsreader for editorial content -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Newsreader', 'serif'],
+                    },
+                    colors: {
+                        sand: {
+                            50: '#F9F8F6',
+                            100: '#F2EFEA',
+                            200: '#EBE6DE',
+                            300: '#DED5C8',
+                            800: '#5C5446',
+                            900: '#3D382E',
+                        },
+                        sage: {
+                            400: '#9DB0A3',
+                            500: '#7A9181',
+                        },
+                        terracotta: {
+                            400: '#DF8B78',
+                            500: '#C86B56',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: theme('colors.sand.100');
+            color: theme('colors.sand.900');
+            /* Soft noise texture for tactile feel */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            overflow-x: hidden;
+        }
+
+        /* Ambient glowing background blobs */
+        .ambient-glow {
+            position: fixed;
+            width: 60vw;
+            height: 60vw;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .glow-1 { top: -20%; left: -10%; background: #FFE8D6; }
+        .glow-2 { bottom: -20%; right: -10%; background: #E2ECE5; }
+
+        /* Floating Top Bar */
+        .top-bar {
+            position: fixed;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255,255,255,1);
+            border-radius: 100px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+        .top-bar:focus-within {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,1);
+            width: 95%;
+        }
+
+        /* Floating Dock */
+        .dock {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,1);
+            border-radius: 100px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            gap: 0.5rem;
+        }
+        .dock-item {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Fixed typo */
+            color: theme('colors.sand.800');
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            cursor: pointer;
+        }
+        .dock-item:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-8px) scale(1.1);
+            color: theme('colors.sand.900');
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+        .dock-item.active {
+            background: white;
+            color: theme('colors.sage.500');
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .dock-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: theme('colors.sage.500');
+        }
+
+        /* Canvas & Masonry */
+        .canvas-area {
+            padding: 7rem 2rem 10rem 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            column-count: 4;
+            column-gap: 1.5rem;
+        }
+        @media (max-width: 1280px) { .canvas-area { column-count: 3; } }
+        @media (max-width: 1024px) { .canvas-area { column-count: 2; } }
+        @media (max-width: 640px) { .canvas-area { column-count: 1; } }
+
+        .card {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.9);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .card > * { position: relative; z-index: 1; }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02);
+            border-color: #fff;
+        }
+
+        .tag-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: rgba(0,0,0,0.04);
+            color: theme('colors.sand.800');
+        }
+        .tag-pill.ai {
+            background: linear-gradient(135deg, #E6EEFA, #F2EAF4);
+            color: theme('colors.sage.500');
+        }
+
+        /* Specific Card Styles */
+        .card-image {
+            margin: -1.5rem -1.5rem 1rem -1.5rem;
+            height: 200px;
+            border-radius: 1.5rem 1.5rem 0 0;
+            overflow: hidden;
+        }
+        .card-image img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 1s ease;
+        }
+        .card:hover .card-image img { transform: scale(1.05); }
+
+        .card-quote {
+            background: theme('colors.sand.800');
+            color: theme('colors.sand.50');
+            border: none;
+        }
+        .card-quote .tag-pill { background: rgba(255,255,255,0.15); color: white; }
+
+        /* Typography overrides */
+        .serif-title {
+            font-family: 'Newsreader', serif;
+            letter-spacing: -0.02em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
+    <!-- Floating Top Bar -->
+    <header class="top-bar">
+        <div class="w-10 h-10 rounded-full bg-sand-200 flex items-center justify-center mr-3 shrink-0">
+            <span class="font-serif italic text-xl">K</span>
+        </div>
+        
+        <i data-lucide="search" class="w-5 h-5 text-sand-800 opacity-50 mr-2 shrink-0"></i>
+        <input type="text" placeholder="Search your knowledge graph... (Cmd+K)" 
+            class="bg-transparent border-none outline-none flex-1 text-sand-900 placeholder:text-sand-800/40 font-medium">
+        
+        <div class="flex gap-2 shrink-0 ml-4">
+            <button class="w-10 h-10 rounded-full hover:bg-sand-200 flex items-center justify-center transition">
+                <i data-lucide="sparkles" class="w-5 h-5 text-sand-800 opacity-70"></i>
+            </button>
+            <img src="https://i.pravatar.cc/150?img=11" alt="Profile" class="w-10 h-10 rounded-full border border-white shadow-sm">
+        </div>
+    </header>
+
+    <!-- Main Canvas Area -->
+    <main class="canvas-area">
+        
+        <!-- Welcome Card -->
+        <div class="card" style="background: rgba(255,255,255,0.4); border: 2px dashed rgba(0,0,0,0.1);">
+            <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="sun" class="w-5 h-5 text-terracotta-500"></i>
+                <span class="text-sm font-semibold text-terracotta-500">Good Morning, Amrit</span>
+            </div>
+            <h2 class="serif-title text-4xl leading-tight text-sand-900">
+                You have <span class="italic text-sage-500">12 new items</span> synced from your browser.
+            </h2>
+            <p class="text-sand-800/70 text-sm mt-2 font-medium">AI has auto-tagged and organized them into your spaces.</p>
+        </div>
+
+        <!-- Article Card -->
+        <div class="card">
+            <div class="flex justify-between items-start">
+                <div class="flex gap-1.5 flex-wrap">
+                    <span class="tag-pill">Article</span>
+                    <span class="tag-pill ai"><i data-lucide="sparkles" class="w-3 h-3 mr-1 inline"></i>Architecture</span>
+                </div>
+                <i data-lucide="arrow-up-right" class="w-4 h-4 text-sand-800/30"></i>
+            </div>
+            <h3 class="font-semibold text-xl leading-tight">The Psychology of Spaces: Generative Design in 2026</h3>
+            <p class="font-serif text-sand-800/80 leading-relaxed text-sm">
+                How machine learning algorithms are optimizing floor plans for natural light, thermal efficiency, and human flow before a single brick is laid. The resulting structures are paradoxically more organic.
+            </p>
+            <div class="flex gap-2 mt-2 items-center">
+                <div class="w-5 h-5 rounded-full border border-sand-200" style="background: #EBEBEB;"></div>
+                <div class="w-5 h-5 rounded-full border border-sand-200" style="background: #9DB0A3;"></div>
+                <div class="w-5 h-5 rounded-full border border-sand-200" style="background: #3D382E;"></div>
+                <span class="text-xs text-sand-800/40 font-medium ml-2">via archdaily.com</span>
+            </div>
+        </div>
+
+        <!-- Image Inspo Card -->
+        <div class="card p-0">
+            <div class="card-image h-64 relative m-0 rounded-[1.5rem]">
+                <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover" alt="Interior">
+                <div class="absolute top-4 left-4 flex gap-2">
+                    <span class="tag-pill bg-white/80 backdrop-blur">Inspo</span>
+                </div>
+                <div class="absolute bottom-4 right-4 bg-white/80 backdrop-blur p-2 rounded-full shadow-lg">
+                    <i data-lucide="star" class="w-4 h-4"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Note Card -->
+        <div class="card bg-amber-50/80 border-amber-100/50">
+            <div class="flex gap-1.5 mb-2">
+                <span class="tag-pill bg-amber-200/50 text-amber-900">Note</span>
+                <span class="tag-pill bg-amber-200/50 text-amber-900">Project Koshas</span>
+            </div>
+            <h3 class="serif-title text-2xl italic leading-tight mb-2">V0 Launch Strategy</h3>
+            <ul class="space-y-2 text-sm text-sand-800 font-medium">
+                <li class="flex gap-2 items-start"><i data-lucide="check-circle-2" class="w-4 h-4 text-sage-500 shrink-0 mt-0.5"></i> Solidify the aesthetic direction</li>
+                <li class="flex gap-2 items-start"><i data-lucide="circle" class="w-4 h-4 text-sand-300 shrink-0 mt-0.5"></i> Implement Tauri file watcher</li>
+                <li class="flex gap-2 items-start"><i data-lucide="circle" class="w-4 h-4 text-sand-300 shrink-0 mt-0.5"></i> Setup local Drizzle schema</li>
+            </ul>
+        </div>
+
+        <!-- Quote Card -->
+        <div class="card card-quote">
+            <div class="flex justify-between items-start">
+                <span class="tag-pill">Quote</span>
+                <i data-lucide="quote" class="w-4 h-4 opacity-50"></i>
+            </div>
+            <p class="serif-title text-2xl leading-relaxed mt-2 mb-4">
+                "Good design is making something intelligible and memorable. Great design is making something memorable and meaningful."
+            </p>
+            <span class="text-xs opacity-60 font-bold tracking-widest uppercase">— Dieter Rams</span>
+        </div>
+
+        <!-- Graph Snippet Card -->
+        <div class="card bg-sage-50/80 border-sage-100/50">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex gap-1.5 flex-wrap">
+                    <span class="tag-pill bg-sage-200/50 text-sage-900">Connection</span>
+                </div>
+                <i data-lucide="git-merge" class="w-4 h-4 text-sage-500/50"></i>
+            </div>
+            <p class="text-sm font-medium text-sand-800">
+                You linked <strong class="text-sand-900 font-semibold">Dieter Rams</strong> to <strong class="text-sand-900 font-semibold">The Architecture of Tomorrow</strong>.
+            </p>
+            <div class="mt-4 p-4 rounded-xl bg-white/50 border border-white shadow-sm flex items-center justify-center relative overflow-hidden h-32">
+                <!-- Abstract visual representation of a graph connection -->
+                <svg width="100%" height="100%" viewBox="0 0 200 100" class="opacity-30 absolute inset-0">
+                    <path d="M 50 50 Q 100 0 150 50" stroke="#7A9181" stroke-width="2" fill="none" stroke-dasharray="4 4" />
+                    <circle cx="50" cy="50" r="6" fill="#7A9181" />
+                    <circle cx="150" cy="50" r="6" fill="#C86B56" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Simple Link Card -->
+        <div class="card">
+            <div class="flex gap-1.5 flex-wrap mb-3">
+                <span class="tag-pill">Bookmark</span>
+                <span class="tag-pill ai">Tools</span>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="w-12 h-12 rounded-xl bg-sand-100 flex items-center justify-center shrink-0">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Svelte_Logo.svg/1200px-Svelte_Logo.svg.png" class="w-6 h-6 object-contain" alt="Svelte">
+                </div>
+                <div>
+                    <h3 class="font-semibold text-base leading-tight">SvelteKit 5 Documentation</h3>
+                    <p class="text-xs text-sand-800/60 mt-1 truncate w-48">kit.svelte.dev/docs</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Floating Dock -->
+    <nav class="dock">
+        <div class="dock-item active" title="Collect">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+        <div class="dock-item" title="Notes">
+            <i data-lucide="pen-tool" class="w-6 h-6"></i>
+        </div>
+        <div class="dock-item" title="Graph">
+            <i data-lucide="git-merge" class="w-6 h-6"></i>
+        </div>
+        <div class="w-px h-8 bg-sand-800/10 mx-2"></div>
+        <div class="dock-item bg-sand-900 text-white hover:bg-sand-800" title="New Capture" style="width: 3rem; height: 3rem; margin-left: 0.25rem;">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+        </div>
+    </nav>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
