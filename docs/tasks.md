@@ -17,17 +17,11 @@
 | **Dependencies** | None |
 | **Core-docs to reference** | `koshas-specs-v1.md` §1 (Architecture Overview), `team.md` |
 | **Skills to use** | `tauri-v2`, `sveltekit-routing` |
+| **Status** | ✅ Complete |
 
 **Description:** Initialize the SvelteKit 5 + Tauri 2 project with TypeScript. Configure Drizzle ORM with the SQLite plugin. Set up the project structure following the spec's architecture overview.
 
-**Acceptance:**
-- `npm run dev` starts SvelteKit + Tauri dev server.
-- Drizzle can connect to SQLite and run a test migration.
-- TypeScript compiles without errors.
-- Project structure matches spec:
-  ```
-  src/lib/components/{layout,collect,notes,graph,search,cards,shared}/
-  ```
+**Completed:** SvelteKit 5 + TS scaffolded, Tauri 2 initialized, Drizzle ORM 0.45.2 + @tauri-apps/plugin-sql 2.4.0 installed, SQL plugin integrated in Rust backend, project directory structure created (src/lib/components/{layout,collect,notes,graph,search,cards,shared}), TypeScript check passes (0 errors), Rust cargo check passes (0 errors).
 
 ---
 

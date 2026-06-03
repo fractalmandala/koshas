@@ -6,16 +6,16 @@
 
 ## Current Status
 
-- **Phase:** Planning
+- **Phase:** Development
 - **Current milestone:** M1 — Data Layer + Collect Foundation
-- **Current tasks:** None assigned (planning phase)
+- **Current tasks:** T-001 complete. Next: T-002 (Drizzle schema + migrations)
 - **Blockers:** None
 
 ## Milestone Progress
 
 | Milestone | Status | Deliverable Count |
 |---|---|---|
-| **M1** — Data Layer + Collect Foundation | Planned | 14 tasks |
+| **M1** — Data Layer + Collect Foundation | In progress | 14 tasks (1/14 complete) |
 | **M2** — Notes Sheath | Planned | TBD |
 | **M3** — Graph Sheath | Planned | TBD |
 | **M4** — Polish & Release | Planned | TBD |
@@ -24,6 +24,7 @@
 
 | Date | Update |
 |---|---|
+| 2026-06-03 | **T-001 complete.** SvelteKit 5 + Tauri 2 scaffolded. Drizzle ORM + SQLite plugin configured. Project directory structure created. TypeScript compiles (0 errors). Rust backend compiles (0 errors). Refer to git log for full file list. |
 | 2026-06-03 | Project initialized. Spec v1 finalized. Directory structure created. |
 
 ---

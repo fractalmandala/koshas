@@ -3,12 +3,17 @@ node_modules/
 
 # Build output
 build/
-.svelte-kit/
+/.svelte-kit/
+.output
+.vercel
+.netlify
+.wrangler
 
 # Environment
 .env
 .env.*
 !.env.example
+!.env.test
 
 # IDE
 .vscode/
@@ -33,3 +38,7 @@ coverage/
 
 # Generated
 *.tsbuildinfo
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
