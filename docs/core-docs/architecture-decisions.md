@@ -81,3 +81,10 @@
 
 **Decision:** All documentation and agent instructions are model-agnostic
 **Rationale:** Orchestrator and agents may run on different models (GPT, Gemini, DeepSeek, etc.). The system relies on files, conventions, and explicit instructions — not model capabilities.
+
+## ADR-015: Vector/Semantic Search
+
+**Decision:** Deferred — no vector search in v1. Embedding column reserved in schema but not indexed.
+**Rationale:** SQLite has no native vector similarity operations. sqlite-vss is unmaintained and has compatibility issues with recent SQLite versions. A viable path requires either a Tauri-side Rust in-memory cosine similarity layer or a dedicated vector database. Neither is justified for v1 scope.
+**Impact:** "Same Vibe" search and natural-language queries are not available in v1. The `embedding BLOB` column remains in the items table for future use. AI enrichment pipeline (T-010) excludes embedding generation. This decision should be revisited for v2 with a concrete implementation plan.
+**ADR to update when resolved:** ADR-014

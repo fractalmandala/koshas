@@ -45,6 +45,8 @@
 - Drizzle Studio can inspect the DB.
 - FTS5 virtual tables created and linked.
 
+**Note:** Drizzle ORM does not natively support FTS5 virtual tables (`CREATE VIRTUAL TABLE ... USING fts5(...)`). The FTS5 tables (`items_fts`, `notes_fts`) must be created via raw SQL DDL outside of Drizzle's schema definitions. Use `db.run(sql\`CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(title, description, bodyText, ocrText, summary, content='items', content_rowid='rowid')\`)` in a setup migration or application init.
+
 ---
 
 ### T-003: URL Normalization Engine
@@ -276,7 +278,7 @@
 | **Effort** | Medium (2-3 sessions) |
 | **Dependencies** | T-001 |
 | **Core-docs to reference** | `koshas-specs-v1.md` §12 (App Lifecycle) |
-| **Skills to use** | `svelte-runes`, `sveltekit-routing`, `tauri-v2` |
+| **Skills to use** | `svelte-runes`, `sveltekit-routing`, `tauri-v2`, `interaction-patterns` |
 
 **Description:** Sidebar tab system (Collect, Notes, Graph tabs — Notes and Graph tabs are placeholders in M1). Window management (hide on close, Cmd+Q quits, remember state). Menu bar integration. Drag-and-drop file/URL support.
 
@@ -289,9 +291,54 @@
 
 ---
 
+### T-014a: Spaces UI
+
+| Field | Value |
+|---|---|
+| **Agent** | Interaction Engineer |
+| **Effort** | Medium (2 sessions) |
+| **Dependencies** | T-002, T-012 |
+| **Core-docs to reference** | `koshas-specs-v1.md` §7.2 (Spaces) |
+| **Skills to use** | `svelte-runes`, `interaction-patterns` |
+
+**Description:** Build the Spaces UI — create, rename, delete Manual and Smart Spaces. Add/remove items from Manual Spaces. Smart Spaces display auto-populated results from saved search queries. Spaces sidebar section alongside Groups.
+
+**Acceptance:**
+- Manual Spaces created, renamed, deleted via UI.
+- Items can be added to and removed from Manual Spaces.
+- Smart Spaces display dynamic results from their query definition.
+- Spaces sidebar section shows all user spaces.
+- Empty states for spaces with no items.
+
+---
+
+### T-014b: Resolve Open Technical Questions
+
+| Field | Value |
+|---|---|
+| **Agent** | Product Lead (Orchestrator) |
+| **Effort** | Small (1 session) |
+| **Dependencies** | None (run early in M1) |
+| **Core-docs to reference** | `koshas-specs-v1.md` Appendix (Open Implementation Questions), `architecture-decisions.md` |
+| **Skills to use** | — |
+
+**Description:** Investigate and document decisions for the remaining open implementation questions from the spec appendix. Must produce documented decisions for:
+- Image thumbnail generation approach (before T-012).
+- PDF rendering library (before T-025).
+- DOC/DOCX reader library (before T-025).
+- ENV config model for AI enrichment API keys and model paths (before T-010).
+- Graph-as-navigation assumption validation plan (before M3).
+
+**Acceptance:**
+- Each question has a documented decision or deferral in `architecture-decisions.md`.
+- Decisions are communicated to relevant agents (thumbnail → frontend for T-012; PDF/DOCX → frontend for T-025; ENV → backend for T-010).
+- No open questions remain undocumented at M1 completion.
+
+---
+
 ## M2 — Notes Sheath
 
-*Task details (T-015 through T-027) will be elaborated when M2 begins. For now:*
+*Task details (T-015 through T-027) will be elaborated via PT-002 when M1 completes. For now:*
 
 | Ref | Summary | Agent | Effort (est.) |
 |---|---|---|---|
@@ -313,7 +360,7 @@
 
 ## M3 — Graph Sheath
 
-*Task details (T-028 through T-035) will be elaborated when M3 begins. For now:*
+*Task details (T-028 through T-035) will be elaborated via PT-002 when M2 completes. For now:*
 
 | Ref | Summary | Agent | Effort (est.) |
 |---|---|---|---|
@@ -343,6 +390,49 @@
 | T-042 | Changelog + release notes | Product Lead | Small |
 | T-043 | User documentation | Product Lead | Medium |
 | T-044 | Final spec review + cleanup | Product Lead | Small |
+| T-044a | Preferences/Settings UI (Cmd+,) | Interaction Engineer | Small |
+| T-044b | macOS Spotlight indexing integration | Back-End Engineer | Small |
+
+---
+
+### T-044a: Preferences/Settings UI
+
+| Field | Value |
+|---|---|
+| **Agent** | Interaction Engineer |
+| **Effort** | Small (1 session) |
+| **Dependencies** | T-014 (app shell) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §12 (App Lifecycle), §13 (Keyboard Shortcuts — Cmd+,) |
+| **Skills to use** | `svelte-runes`, `interaction-patterns` |
+
+**Description:** Build the Preferences/Settings window accessible via Cmd+,. Includes toggles for: menu bar extra visibility, Serendipity cooldown period, clipboard monitoring (shown but disabled with "post-v1" label), Reset Onboarding button. Simple tabbed or list-of-sections layout.
+
+**Acceptance:**
+- Cmd+, opens Preferences window/modal.
+- Menu bar extra toggle works (requires app restart or immediate apply).
+- Serendipity cooldown period configurable.
+- "Reset Onboarding" button replays onboarding on next launch.
+- Settings persisted across app restarts.
+
+---
+
+### T-044b: macOS Spotlight Indexing
+
+| Field | Value |
+|---|---|
+| **Agent** | Back-End Engineer |
+| **Effort** | Small (1 session) |
+| **Dependencies** | T-001 (Tauri configured) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §1 (Architecture — "Spotlight indexing supported"), §12 |
+| **Skills to use** | `rust-desktop-applications`, `tauri-v2` |
+
+**Description:** Integrate macOS Spotlight indexing via CoreSpotlight/NSUserActivity. Index item titles, descriptions, and URLs so users can find Koshas content through macOS system search (Cmd+Space). Index updates on item create/update/delete.
+
+**Acceptance:**
+- Items indexed in Spotlight after creation.
+- Spotlight search returns Koshas items with title and description.
+- Deleted items removed from Spotlight index.
+- Index updates are batched (no individual re-index for every save).
 
 ---
 
@@ -370,3 +460,27 @@ These are recurring tasks that can be triggered at any time. They are not tied t
 - Append results to `docs/test-log.md` with a timestamped entry.
 
 **Trigger:** Say `"run PT-001"`, `"run an exploratory test"`, or `"test the app"`. Any agent reading this file will execute it.
+
+---
+
+### PT-002: Elaborate Next Milestone Task Details
+
+| Field | Value |
+|---|---|
+| **Agent** | Product Lead (Orchestrator) |
+| **Effort** | Small (1 session per milestone) |
+| **Dependencies** | Completion of current milestone |
+| **Core-docs to reference** | `koshas-specs-v1.md`, `milestones.md`, `tasks.md` (current entries) |
+| **Skills to use** | — |
+
+**Description:** Before the next milestone begins, elaborate its task entries in `tasks.md` from summary-table format to full detail (description, acceptance criteria, core-docs to reference, skills). This must happen at the end of each milestone so the next milestone's tasks are ready for delegation. Refer to the detailed T-001 through T-014b entries for the format standard.
+
+**Milestone triggers:**
+- After M1 completes → elaborate M2 tasks (T-015 through T-027).
+- After M2 completes → elaborate M3 tasks (T-028 through T-035).
+- After M3 completes → elaborate M4 tasks (T-036 through T-044b).
+
+**Acceptance:**
+- Every task in the next milestone has: Description, Acceptance (bullet points), Core-docs to reference, Skills to use.
+- Acceptance criteria align with the milestone's acceptance criteria in `milestones.md`.
+- No task is left as a stub when its milestone begins.

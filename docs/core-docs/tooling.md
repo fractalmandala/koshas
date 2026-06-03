@@ -11,7 +11,7 @@ These are project-local skill directories under `tools/`. Agents read these file
 | Skill | Located at | Used by | When |
 |---|---|---|---|
 | **drizzle-orm-patterns** | `tools/drizzle-orm-patterns/` | Back-End Engineer | Schema design, migrations, queries |
-| **tauri-v2** | `tools/tauri-v2/` | Back-End Engineer, Interaction Engineer | Project structure, IPC, capabilities, window management |
+| **tauri-v2** | `tools/tauri-skills-main/tauri-v2/` | Back-End Engineer, Interaction Engineer | Project structure, IPC, capabilities, window management |
 | **rust-desktop-applications** | `tools/rust-desktop-applications/` | Back-End Engineer | Rust architecture, async patterns, state management |
 | **tauri-event-system** | `tools/tauri-event-system/` | Back-End Engineer, Interaction Engineer | Progress events, IPC, backend→frontend communication |
 | **d3-visualization** | `tools/d3-visualization/` | Interaction Engineer | Graph visualization force-directed layout |

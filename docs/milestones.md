@@ -14,6 +14,8 @@
 - Groups system classifies items by rules.
 - Basic app shell exists with sidebar, search, and import UI.
 - AI enrichment pipeline framework is in place (handlers are stubs).
+- Spaces (Manual + Smart) can be created, viewed, and items added/removed.
+- Open technical questions (thumbnail generation, PDF/DOCX rendering, ENV config) have documented decisions.
 
 | Ref | Task | Agent | Effort |
 |---|---|---|---|
@@ -31,6 +33,8 @@
 | T-012 | Item card system (11 content types) | Interaction Engineer | Large |
 | T-013 | Import UI + progress display | Interaction Engineer | Medium |
 | T-014 | App shell (sidebar tabs, window mgmt, menu bar) | Interaction Engineer | Medium |
+| T-014a | Spaces UI (Manual + Smart space CRUD) | Interaction Engineer | Medium |
+| T-014b | Resolve open technical questions (thumbnail, PDF, DOCX, ENV config) | Product Lead | Small |
 
 ---
 
@@ -90,7 +94,7 @@
 
 ## M4 — Polish & Release
 
-**Dependencies:** M1, M2, M3 (can run partially in parallel with M2/M3)
+**Dependencies:** M1, M2, M3 (can run partially in parallel with M2/M3 — writing tasks T-041, T-042, T-043 are unblocked at M2; T-044a and T-044b are unblocked at M1; T-036 is blocked until M2 provides the shell polish)
 **Acceptance criteria:**
 - Onboarding flow is complete and replayable.
 - Backup/restore works end-to-end.
@@ -98,6 +102,8 @@
 - App lifecycle (menu bar, hide, quit, window state) polished.
 - Performance targets met.
 - README, changelog, and user documentation written.
+- Preferences/Settings UI available (Cmd+,).
+- macOS Spotlight indexing integrated.
 
 | Ref | Task | Agent | Effort |
 |---|---|---|---|
@@ -110,3 +116,5 @@
 | T-042 | Changelog + release notes | Product Lead | Small |
 | T-043 | User documentation | Product Lead | Medium |
 | T-044 | Final spec review + cleanup | Product Lead | Small |
+| T-044a | Preferences/Settings UI (Cmd+,) | Interaction Engineer | Small |
+| T-044b | macOS Spotlight indexing integration | Back-End Engineer | Small |

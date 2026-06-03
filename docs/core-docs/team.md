@@ -1,6 +1,8 @@
 # Team
 
-**Derived from:** koshas-specs-v1.md §16
+**Canonical source for team structure, roles, identifiers, and ownership.**
+
+This file is the single source of truth for the Koshas team. The app specification (`koshas-specs-v1.md §16`) references this file rather than duplicating it.
 
 ---
 
@@ -16,7 +18,7 @@
 
 ---
 
-## Role Identities & Ownership
+## Role Descriptions
 
 ### Project Steward (default role for all new agents)
 - Repository health — knows project structure, file locations, conventions.
@@ -76,17 +78,7 @@ Agents call each other by single-word identifier. See `AGENTS.md` for the full c
 - Any agent → `orchestrator` for blockers, scope changes, or escalations only.
 - Any product agent → `steward` for conventions, standards, or project navigation.
 
-**Communication channels:**
-
-| Channel | Purpose | Participants |
-|---|---|---|
-| Product briefs | Feature proposals from Product Lead | All |
-| Design handoffs | Design Head → Interaction Engineer | Design Head + Interaction Engineer |
-| API specs | Back-End Engineer → Interaction Engineer | Back-End Engineer + Interaction Engineer |
-| Scope reviews | Before milestone start | All |
-| Post-milestone review | After milestone ships | All |
-
-**Decision hierarchy:**
+### Decision Hierarchy
 
 | Decision Type | Decides |
 |---|---|
@@ -95,12 +87,6 @@ Agents call each other by single-word identifier. See `AGENTS.md` for the full c
 | How data is stored and processed | Back-End Engineer (after input) |
 | How the frontend is built | Interaction Engineer (after input) |
 | How to handle a disagreement | Product Lead |
-
-**Milestone cadence:**
-- Each milestone targets a single sheath or cross-cutting capability.
-- Before milestone: Product Lead writes brief, Design Head produces flows, Back-End Engineer validates feasibility.
-- During milestone: Interaction Engineer builds frontend, Back-End Engineer builds backend, Design Head reviews implementation.
-- After milestone: Product Lead writes release notes, team reviews scope vs delivery.
 
 ---
 

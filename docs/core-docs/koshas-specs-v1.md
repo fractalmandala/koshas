@@ -74,7 +74,7 @@ The Collect Sheath is the universal ingestion layer. It handles every way conten
 | **Browser import** | Import bookmarks and history from Chromium browsers (Chrome, Brave, Helium). Copy-to-temp, deduplication, merge pipeline. |
 | **Manual add** | Add a URL, note, quote, or text snippet. |
 | **Drag-and-drop** | Drop URLs, images, PDFs, video files, or text into the app window. |
-| **Clipboard** | Monitor clipboard for URLs and provide a quick-save prompt (optional). No data is sent anywhere — entirely local. |
+| **Clipboard** | Monitor clipboard for URLs and provide a quick-save prompt (optional). No data is sent anywhere — entirely local. **Deferred to post-v1.** |
 | **File import** | Import local files — images, PDFs, markdown, text. Files are copied to a user-chosen location on disk, or to the configurable "imports folder" set in Preferences. |
 
 ### 2.2 Import Pipeline (Browser)
@@ -133,6 +133,7 @@ Type classification on capture is automatic (via URL pattern, file extension, an
 - For articles, use Mozilla Readability to extract full body text.
 - Failed metadata fetches are retried only on user trigger.
 - Field-level user-edit locks prevent overwrite.
+- **Note:** Structured extraction for `product` (price, store) and `recipe` (ingredients, instructions) types is not in v1. These types fall back to standard metadata fetching. Structured extraction requires schema.org parsing or ML extraction — deferred to post-v1.
 
 ### 2.6 Reading Mode
 
@@ -261,7 +262,7 @@ When a folder is added to a Notebook, Koshas indexes all `.md` files for fast se
 - Full-screen, distraction-free writing mode.
 - Sidebar collapses, editor fills the window. Only the document and minimal toolbar remain visible.
 - Toolbar in Focus Mode: Undo/Redo, view switcher, "Exit Focus Mode" button.
-- Cmd+Shift+F toggles Focus Mode.
+- Cmd+Shift+Return toggles Focus Mode.
 - Exiting Focus Mode restores the previous layout.
 
 ### 3.10 File Openability Matrix
@@ -365,10 +366,9 @@ Every AI-generated field has a provenance marker. In the UI, AI tags, summaries,
 
 ### 5.5 Embeddings and Semantic Search
 
-- Each item gets a vector embedding for semantic search.
-- Powers:
-  - **"Same Vibe" search** — find visually or semantically similar items from any starting item.
-  - **Natural language queries** — find items by describing what you're looking for.
+- **Deferred to post-v1.** See ADR-015 for rationale.
+- The `embedding BLOB` column is reserved in the `items` table schema for future use.
+- Vector search infrastructure will be re-evaluated when a stable SQLite vector extension or viable in-process approach exists.
 
 ### 5.6 Color Extraction
 
@@ -379,16 +379,18 @@ Every AI-generated field has a provenance marker. In the UI, AI tags, summaries,
 
 ```
 Capture → Classify type → Fetch metadata → Queue enrichment jobs (async):
-   ├─ OCR (images)
-   ├─ Auto-tagging (images + content)
-   ├─ Summarization (articles, PDFs)
-   ├─ Embedding generation (all content)
-   ├─ Color extraction (images)
-   └─ Classification into stacks
+   ├─ OCR (images) [stub in v1]
+   ├─ Auto-tagging (images + content) [stub in v1]
+   ├─ Summarization (articles, PDFs) [stub in v1]
+   ├─ Embedding generation [deferred — see ADR-015]
+   ├─ Color extraction (images) [stub in v1]
+   └─ Classification into stacks [stub in v1]
 → Each job writes to its own field → Update FTS5 index → UI reflects enrichment
 ```
 
 Enrichment jobs are non-blocking. The item is visible immediately. Each item has `enrichmentStatus`: `pending`, `enriching`, `done`, `failed`. The UI shows enrichment progress per card with a subtle indicator.
+
+**Real AI handler implementation is deferred to post-v1.** T-010 creates the framework (job queue, handler interface, status management) with empty stubs. The individual handlers (OCR, auto-tagging, summarization, color extraction, stack classification) are not implemented in v1. This is intentional — the framework allows adding handlers later without architectural changes.
 
 ---
 
@@ -514,6 +516,8 @@ Stacks are auto-generated content clusters based on AI classification. Examples:
 4. Convert to Markdown via **Turndown**.
 5. Generate YAML frontmatter via **js-yaml**.
 6. Save `.md` file via save dialog.
+
+**Portability:** Exported `.md` files contain `koshas://item/{uuid}` links that only resolve inside Koshas. An optional "Export as portable" mode converts these to relative path references or plain markdown links. In-app, links always use the `koshas://` format for integrity.
 
 **Error handling:**
 
@@ -748,7 +752,7 @@ exported_at: "{ISO 8601 timestamp}"
 | **Cmd+B** | Toggle browser sync panel |
 | **Cmd+J** | Toggle console log panel |
 | **Cmd+Shift+N** | Quick Note |
-| **Cmd+Shift+F** | Focus Mode |
+| **Cmd+Shift+Return** | Focus Mode |
 | **Cmd+[** | Navigate back |
 | **Cmd+]** | Navigate forward |
 | **Cmd+,** | Open Preferences |
@@ -805,15 +809,15 @@ Post-onboarding landing: Collect Sheath with groups view. Onboarding is replayab
 
 Koshas is built by a four-person development team, each with a distinct ownership area and a bridge to the others.
 
-### Team Structure
+**Canonical team structure:** See `docs/core-docs/team.md` for the team structure, identifiers, ownership areas, and operating model. The table below is a summary reference.
 
-| Role | Identifier | Focus | Ownership |
-|---|---|---|---|
-| **Project Steward** (default) | `steward` | The "project" itself | Repository health, conventions, audit, agent onboarding |
-| **Product Lead** (Orchestrator) | `orchestrator` | The "why" and "what" | Strategy, roadmap, prioritization, business viability |
-| **Design Head** | `designer` | The "experience" and "system" | User research, journeys, information architecture, design system |
-| **Back-End Engineer** | `backend` | The "engine" and "data" | Architecture, database, AI pipeline, APIs, security |
-| **Interaction Engineer** | `frontend` | The "bridge" and "motion" | Frontend, state, animation, UI, editor integration |
+| Role | Identifier | Focus |
+|---|---|---|
+| **Project Steward** (default) | `steward` | Repository health, conventions, audit, agent onboarding |
+| **Product Lead** (Orchestrator) | `orchestrator` | Strategy, roadmap, prioritization |
+| **Design Head** | `designer` | User research, information architecture, design system |
+| **Back-End Engineer** | `backend` | Architecture, database, AI pipeline, APIs |
+| **Interaction Engineer** | `frontend` | Frontend, state, animation, UI, editor integration |
 
 ### 16.1 Product Lead
 
@@ -1053,10 +1057,12 @@ Koshas is built by a four-person development team, each with a distinct ownershi
 
 ## Appendix: Open Implementation Questions
 
-1. **OCR engine:** Tesseract sidecar vs Rust crate vs local ML model.
-2. **Embedding model:** Local (ONNX/Candle) vs API-based. v1 starts local.
-3. **Image thumbnail generation:** Rust `image` crate vs Tauri plugin vs frontend canvas.
+1. ~~**OCR engine:** Tesseract sidecar vs Rust crate vs local ML model.~~ → Deferred to post-v1 (AI enrichment stubs, see §5.7).
+2. ~~**Embedding model:** Local (ONNX/Candle) vs API-based. v1 starts local.~~ → Deferred to post-v1 (ADR-015, see §5.5).
+3. **Image thumbnail generation:** Rust `image` crate vs Tauri plugin vs frontend canvas. **Must be resolved before T-012 (Card System).**
 4. **PDF rendering:** PDF.js vs native webview vs Tauri plugin.
 5. **DOC/DOCX reader:** Conversion library for read-only display.
 6. **ENV config model:** Enrichment API keys, model paths, prompt templates in a config file.
 7. **Assumption validation:** Validate that users want a visual graph for navigation before committing to heavy graph UI investment.
+
+**Status:** Questions 1-2 resolved (deferred). Question 3 is a blocking dependency for T-012. Questions 4-7 remain open and should be resolved before their respective implementation tasks begin. See PT-002 (Resolve Open Technical Questions) in tasks.md.

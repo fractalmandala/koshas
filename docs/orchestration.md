@@ -10,21 +10,23 @@
 - **Current milestone:** M1 — Data Layer + Collect Foundation
 - **Current tasks:** T-001 complete. Next: T-002 (Drizzle schema + migrations)
 - **Blockers:** None
+- **Open issues being resolved:** Appraisal-driven fixes applied — shortcut collision, tool path, new tasks added, ADR-015, spec updates. See git log for full changelog.
 
 ## Milestone Progress
 
 | Milestone | Status | Deliverable Count |
 |---|---|---|
-| **M1** — Data Layer + Collect Foundation | In progress | 14 tasks (1/14 complete) |
-| **M2** — Notes Sheath | Planned | TBD |
-| **M3** — Graph Sheath | Planned | TBD |
-| **M4** — Polish & Release | Planned | TBD |
+| **M1** — Data Layer + Collect Foundation | In progress | 16 tasks (1/16 complete) |
+| **M2** — Notes Sheath | Planned | 13 tasks (stubs) |
+| **M3** — Graph Sheath | Planned | 8 tasks (stubs) |
+| **M4** — Polish & Release | Planned | 11 tasks (stubs) |
 
 ## Recent Updates
 
 | Date | Update |
 |---|---|
-| 2026-06-03 | **T-001 complete.** SvelteKit 5 + Tauri 2 scaffolded. Drizzle ORM + SQLite plugin configured. Project directory structure created. TypeScript compiles (0 errors). Rust backend compiles (0 errors). Refer to git log for full file list. |
+| 2026-06-03 | Applied comprehensive appraisal fixes: Cmd+Shift+F collision fixed (Focus Mode → Cmd+Shift+Return), tooling.md tauri-v2 path corrected, ADR-015 added (vector search deferred), spec updated for AI stub/deferred status, clipboard monitoring marked deferred, T-014a (Spaces UI), T-014b (Resolve Open Questions), T-044a (Preferences), T-044b (Spotlight) added, PT-002 (Elaborate Milestone Tasks) added, team.md made canonical with spec §16 referencing it, user escalation path added to operating rules. |
+| 2026-06-03 | **T-001 complete.** SvelteKit 5 + Tauri 2 scaffolded. Drizzle ORM + SQLite plugin configured. Project directory structure created. TypeScript compiles (0 errors). Rust backend compiles (0 errors). |
 | 2026-06-03 | Project initialized. Spec v1 finalized. Directory structure created. |
 
 ---
@@ -76,6 +78,7 @@ When delegating tasks, use these single-word identifiers:
 - **Never delete core-docs** — only add or revise sections.
 - **Never delete history** from this file — append only.
 - **When in doubt, read more.** If the current state isn't sufficient, read `milestones.md` for context, then `tasks.md` for detail. Maintenance tasks (PT-*) can be found in the Maintenance Tasks section at the bottom of `tasks.md`.
+- **When the Orchestrator would make a scope decision with no clear answer, flag it to the human owner rather than deciding.** Add a `[NEEDS USER INPUT]` entry in this file's Recent Updates section and describe the decision and options.
 
 ---
 
