@@ -7,6 +7,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"tauri": "tauri",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
@@ -18,10 +19,14 @@
 	"devDependencies": {
 		"@libsql/client": "^0.17.3",
 		"@sveltejs/adapter-auto": "^7.0.1",
+		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.57.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tauri-apps/cli": "^2.11.2",
+		"@types/d3": "^7.4.3",
 		"@types/node": "^25.9.1",
+		"@types/sql.js": "^1.4.11",
+		"d3": "^7.9.0",
 		"drizzle-kit": "^0.31.10",
 		"playwright": "^1.60.0",
 		"sass": "^1.100.0",
@@ -29,6 +34,8 @@
 		"svelte-check": "^4.4.6",
 		"typescript": "^6.0.2",
 		"vite": "^8.0.7",
+		"vite-plugin-top-level-await": "^1.6.0",
+		"vite-plugin-wasm": "^3.6.0",
 		"vitest": "^4.1.8"
 	},
 	"dependencies": {
@@ -84,6 +91,7 @@
 		"remark-gfm": "^4.0.1",
 		"remark-parse": "^11.0.0",
 		"remark-rehype": "^11.1.2",
+		"sql.js": "^1.14.1",
 		"unified": "^11.0.5"
 	},
 	"pnpm": {

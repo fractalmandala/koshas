@@ -57,8 +57,8 @@
 			const noteId = crypto.randomUUID();
 			await db.execute(
 				`INSERT INTO items (id, item_type, title, body_text, file_path, enrichment_status, created_at, updated_at)
-				 VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
-				[itemId, 'note', title.trim(), fullContent, filePath, now, now]
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+				[itemId, 'note', title.trim(), fullContent, filePath, 'pending', now, now]
 			);
 			await db.execute(
 				`INSERT OR IGNORE INTO notes (id, item_id, file_path, notebook_id, file_modified_at, created_at, updated_at)

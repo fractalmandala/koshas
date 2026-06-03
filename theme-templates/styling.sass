@@ -27,8 +27,8 @@
 	--sh-3: 0 4px 10px var(--shadow-1-color), 0 14px 30px var(--shadow-4-color)
 
 .dark
-	--surface-10: #080807
-	--surface-00: #161614
+	--surface-10: #141414
+	--surface-00: #0b0b0b
 	--surface-20: #222220
 	--fore-primary: #e0e0e1
 	--fore-secondary: #909091
@@ -42,12 +42,12 @@
 	--medium-40: #898b92
 	--medium-30: #999ba2
 	--shadow-1-color: rgba(0,0,0,0.7)
-	--shadow-2-color: rgba(0,0,0,0.5)
-	--shadow-3-color: rgba(0,0,0,0.8)
+	--shadow-2-color: rgba(0,0,0,1)
+	--shadow-3-color: rgba(0,0,0,1)
 	--shadow-4-color: rgba(0,0,0,0.9)
 	--sh-1: 0 1px 3px var(--shadow-1-color)
-	--sh-2: 0 2px 6px var(--shadow-2-color), 0 12px 28px var(--shadow-3-color)
-	--sh-3: 0 4px 12px var(--shadow-2-color), 0 20px 44px var(--shadow-4-color)
+	--sh-2: 0 2px 6px var(--shadow-2-color), 0 8px 18px var(--shadow-3-color)
+	--sh-3: 0 4px 8px var(--shadow-2-color), 0 10px 14px var(--shadow-4-color)
 
 *
 	box-sizing: border-box
@@ -168,8 +168,6 @@ button
 /* ---------- left rail with growing vine ---------- */
 .rail
 	position: relative
-	border: 1px solid var(--medium-10)
-	background: var(--surface-00)
 	display: flex
 	flex-direction: column
 	border-radius: 8px
@@ -181,10 +179,14 @@ button
 .light
 	.rail
 		box-shadow: var(--sh-2)
+		background: var(--surface-00)
+		border: 1px solid var(--medium-10)
 
 .dark
 	.rail
-		box-shadow: var(--sh-2)
+		box-shadow: 0 2px 6px rgba(0,0,0,1), 0 12px 21px rgba(0,0,0,1)
+		background: var(--surface-00)
+		border: 1px solid var(--surface-20)
 
 .rail-head
 	padding: 22px 24px 10px
@@ -582,35 +584,46 @@ button
 	.masonry
 		columns: 1
 
+.light
+	.card
+		background: var(--surface-00)
+		border: 1px solid var(--medium-10)
+		box-shadow: var(--sh-1)
+		&::before
+			box-shadow: 5px 6px 0 -1px var(--surface-20)
+		&:hover
+			box-shadow: var(--sh-2), var(--sh-3)
+			border-color: var(--medium-20)
+			&::before
+				box-shadow: 9px 13px 0 -1px var(--surface-20)
+
+.dark
+	.card
+		background: var(--surface-00)
+		border: 1px solid var(--medium-00)
+		&:hover
+			box-shadow: var(--sh-3)
+			border-color: var(--surface-20)
+			&::before
+				box-shadow: 9px 13px 0 -1px var(--surface-40)
+
 .card
 	break-inside: avoid
 	margin-bottom: 22px
 	position: relative
-	background: var(--surface-00)
-	border: 1px solid var(--medium-10)
 	border-radius: var(--radius)
-	box-shadow: var(--sh-1)
 	transition: transform .3s var(--ease), box-shadow .45s var(--ease), border-color .3s var(--ease)
 	overflow: hidden
-
 	/* layered-paper backing — the 'sheath' depth */
 	&::before
 		content: ""
 		position: absolute
 		inset: 0
 		border-radius: var(--radius)
-		box-shadow: 5px 6px 0 -1px var(--surface-20)
 		z-index: -1
 		transition: .45s var(--ease)
-
 	&:hover
 		transform: translateY(-4px)
-		box-shadow: var(--sh-2), var(--sh-3)
-		border-color: var(--medium-20)
-
-		&::before
-			box-shadow: 9px 13px 0 -1px var(--surface-20)
-
 	h3
 		font-family: "Google Sans"
 		font-weight: 500
@@ -1401,3 +1414,40 @@ svg.ic
 		text-decoration: none
 		color: var(--fore-primary)
 		font-size: 12px
+
+.aurora
+	background: oklch(0.165 0.024 164)
+	color: oklch(0.965 0.012 160)
+	.bg
+		position: absolute
+		inset: 0
+		z-index: 0
+		overflow: hidden
+	.blob
+		position: absolute
+		border-radius: 50%
+		filter: blur(80px)
+		opacity: 0.55
+		mix-blend-mode: screen
+	.b1
+		width: 50vw
+		height: 50vw
+		left: -15vw
+		top: -10vw
+		background: radial-gradient(circle, oklch(0.55 0.16 162), transparent 65%)
+		animation: fl1 24s ease-in-out infinite alternate
+	.b2
+		width: 42vw
+		height: 42vw
+		right: -12vw
+		bottom: -8vw
+		background: radial-gradient(circle, oklch(0.5 0.13 198), transparent 64%)
+		animation: fl2 30s ease-in-out infinite alternate
+
+@keyframes fl1
+	to
+		transform: translate(8vw, 8vh) scale(1.15)
+
+@keyframes fl2
+	to
+		transform: translate(-6vw, -6vh) scale(1.12)

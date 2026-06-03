@@ -15,6 +15,7 @@
 	import TableRow from '@tiptap/extension-table-row';
 	import TableCell from '@tiptap/extension-table-cell';
 	import TableHeader from '@tiptap/extension-table-header';
+	import { WikilinkExtension } from '$lib/editor/tiptap-wikilink';
 
 	let {
 		value = '',
@@ -53,7 +54,12 @@
 				Table.configure({ resizable: true }),
 				TableRow,
 				TableCell,
-				TableHeader
+				TableHeader,
+				WikilinkExtension.configure({
+					onNavigate: (target: string, displayText: string) => {
+						console.log('[Wikilink] Navigate to:', target, displayText);
+					}
+				})
 			],
 			onUpdate: ({ editor: ed }) => {
 				onChange(ed.getHTML());
@@ -269,4 +275,25 @@
 		float: left
 		height: 0
 		pointer-events: none
+
+	:global(.tiptap-wikilink)
+		background: rgba(99, 102, 241, 0.1)
+		border-radius: 3px
+		padding: 1px 3px
+		color: var(--theme-main, #6366f1)
+		cursor: pointer
+		border-bottom: 1px dashed var(--theme-main, #6366f1)
+		font-size: 0.95em
+
+		&:hover
+			background: rgba(99, 102, 241, 0.2)
+
+	:global(.tiptap-wikilink-broken)
+		background: rgba(239, 68, 68, 0.08)
+		border-radius: 3px
+		padding: 1px 3px
+		color: #ef4444
+		cursor: help
+		border-bottom: 1px dashed #ef4444
+		font-size: 0.95em
 </style>

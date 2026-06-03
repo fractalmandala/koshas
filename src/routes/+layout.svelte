@@ -1,22 +1,29 @@
 <script lang="ts">
 	import '$lib/app.sass';
+	import { browser } from '$app/environment';
 	import favicon from '$lib/assets/favicon.svg';
 
 	let { children }: { children: import('svelte').Snippet } = $props();
 
-	// Keyboard shortcut: Cmd+Shift+F → search overlay
-	let searchOpen = $state(false);
+	// Theme toggling
+	let theme = $state<'light' | 'dark'>('light');
 
-	function handleKeydown(e: KeyboardEvent) {
-		// Cmd+Shift+F
-		if (e.metaKey && e.shiftKey && e.key === 'f') {
-			e.preventDefault();
-			searchOpen = true;
+	// Apply theme class to body
+	$effect(() => {
+		if (browser) {
+			document.body.className = theme;
 		}
-		// Escape closes search
-		if (e.key === 'Escape' && searchOpen) {
-			searchOpen = false;
-		}
+	});
+
+	// Detect system preference on mount
+	if (browser) {
+		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		if (prefersDark) theme = 'dark';
+
+		const mq = window.matchMedia('(prefers-color-scheme: dark)');
+		mq.addEventListener('change', (e) => {
+			theme = e.matches ? 'dark' : 'light';
+		});
 	}
 </script>
 
@@ -24,7 +31,16 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<div id="grain"></div>
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div onkeydown={handleKeydown}>
+<div class="win" onkeydown={(e) => {
+	if (e.metaKey && e.shiftKey && e.key === 'f') {
+		e.preventDefault();
+	}
+	if (e.key === 'Escape') {
+		// handled by search overlay
+	}
+}}>
 	{@render children()}
 </div>

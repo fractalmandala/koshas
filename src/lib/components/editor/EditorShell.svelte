@@ -1,10 +1,14 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import ViewSwitcher, { type EditorMode } from './ViewSwitcher.svelte';
 	import CodeMirrorEditor from './CodeMirrorEditor.svelte';
 	import TipTapEditor from './TipTapEditor.svelte';
 	import MarkdownPreview from './MarkdownPreview.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
-	import { parseFrontmatter, serializeFrontmatter, updateFrontmatterFields } from '$lib/notes/frontmatter';
+	import BacklinksPanel from './BacklinksPanel.svelte';
+	import { parseFrontmatter, serializeFrontmatter } from '$lib/notes/frontmatter';
+	import { setWikilinkTargetsGlobal } from '$lib/editor/cm-wikilink';
+	import { browser } from '$app/environment';
 
 	let {
 		filePath = '',
@@ -32,6 +36,32 @@
 		body = parsed.body;
 		frontmatter = parsed.frontmatter;
 	});
+
+	// Load wikilink targets on mount (browser only)
+	onMount(() => {
+		if (!browser) return;
+		void loadWikilinkTargets();
+	});
+
+	async function loadWikilinkTargets() {
+		try {
+			const { getInitializedDatabase } = await import('$lib/db');
+			const db = await getInitializedDatabase();
+			const items = await db.select<Array<{ id: string; title: string; item_type: string }>>(
+				`SELECT id, COALESCE(title, '') as title, item_type FROM items LIMIT 500`
+			);
+			const notes = await db.select<Array<{ id: string; title: string }>>(
+				`SELECT n.item_id as id, COALESCE(i.title, '') as title FROM notes n LEFT JOIN items i ON i.id = n.item_id LIMIT 500`
+			);
+			const targets = [
+				...items.map((i) => ({ id: i.id, title: i.title, type: i.item_type })),
+				...notes.map((n) => ({ id: n.id, title: n.title, type: 'note' as const }))
+			];
+			setWikilinkTargetsGlobal(targets);
+		} catch {
+			// DB not available (SSR or test)
+		}
+	}
 
 	function handleContentChange(newBody: string) {
 		body = newBody;
@@ -108,6 +138,8 @@
 				onUpdate={handleFrontmatterUpdate}
 			/>
 		{/if}
+
+		<BacklinksPanel {filePath} currentItemId={String(frontmatter?.id ?? '')} />
 	</div>
 </div>
 

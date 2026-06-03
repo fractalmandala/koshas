@@ -17,7 +17,7 @@
 | **Dependencies** | None |
 | **Core-docs to reference** | `koshas-specs-v1.md` §1 (Architecture Overview), `team.md` |
 | **Skills to use** | `tauri-v2`, `sveltekit-routing` |
-| **Status** | ✅ Complete |
+| **Status** | 🚧 In Progress |
 
 **Description:** Initialize the SvelteKit 5 + Tauri 2 project with TypeScript. Configure Drizzle ORM with the SQLite plugin. Set up the project structure following the spec's architecture overview.
 
@@ -34,7 +34,7 @@
 | **Dependencies** | T-001 |
 | **Core-docs to reference** | `koshas-specs-v1.md` §11 (Data Model — all 15 tables) |
 | **Skills to use** | `drizzle-orm-patterns` |
-| **Status** | ✅ Complete |
+| **Status** | 🚧 In Progress |
 
 **Description:** Define all 15 Drizzle schema tables from spec §11. Create initial migration. Test with rollback.
 
@@ -392,7 +392,7 @@
 | **Dependencies** | T-001 (project scaffolding) |
 | **Core-docs to reference** | `koshas-specs-v1.md` §3.1 (Notebook Model), §11.10 (Notebooks), §11.11 (Notebook_Folders) |
 | **Skills to use** | `drizzle-orm-patterns`, `svelte-runes` |
-| **Status** | ✅ Complete |
+| **Status** | 🚧 In Progress |
 
 **Description:** Implement the Notebook model — create, rename, delete notebooks. Each Notebook is a virtual collection of one or more folder paths. A user-designated default save location is chosen from its member folders. The active notebook is global app state. Notebooks appear in the Notes sidebar.
 
@@ -776,17 +776,26 @@
 |---|---|
 | **Agent** | Back-End Engineer |
 | **Effort** | Small (1 session) |
-| **Dependencies** | T-002 |
-| **Core-docs to reference** | `koshas-specs-v1.md` §4.1 (Link Model), §11.6 (link_references) |
+| **Dependencies** | T-002 (schema foundations), T-003 (URL normalization — items need normalized_url for lookups) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §4.1 (Link Model), §11.6 (link_references), `architecture-decisions.md` ADR-020 |
 | **Skills to use** | `drizzle-orm-patterns` |
+| **Status** | 🚧 In Progress |
 
-**Description:** Add the `link_references` table to the Drizzle schema and runtime DB init. Implement CRUD operations: create a link reference between two items, delete a reference, query references by source item, query backlinks by target item. Support multiple reference types (wikilink, explicit, auto-detected).
+**Description:** Add the `link_references` table to the runtime DB init DDL (`src/lib/db/index.ts`). Implement CRUD operations: create a link reference between two items, delete a reference, query references by source item, query backlinks (references by target item). Support multiple reference types (wikilink, explicit, auto-detected).
+
+The `link_references` table tracks `(source_item_id, target_item_id)` pairs with a reference type discriminator. FKs cascade on delete — removing an item automatically removes its references.
 
 **Acceptance:**
-- `link_references` table created in DDL with FKs to items.
-- CRUD operations available: create, delete, get by source, get by target.
-- Reference types: wikilink, explicit, auto-detected.
-- Batch insert for initial link discovery.
+- `link_references` table created in runtime DDL with FKs to `items(id)`, cascade on delete.
+- Reference types: `wikilink`, `explicit`, `auto_detected` stored as string discriminator.
+- CRUD operations: `createLinkReference(db, sourceId, targetId, refType)` → inserts row, dedupes by (source, target, ref_type).
+- `deleteLinkReference(db, sourceId, targetId)` — removes single reference.
+- `getReferencesBySource(db, sourceId)` — returns all references where source_item_id = sourceId.
+- `getBacklinksByTarget(db, targetId)` — returns all references where target_item_id = targetId.
+- `batchInsertLinks(db, links[])` — bulk insert for initial link discovery from all notes.
+- `getAllLinkReferences(db)` — returns all references for graph building (T-032).
+
+**Completed:** `link_references` DDL added to `src/lib/db/index.ts` with FKs, cascade delete, and unique index on `(source_item_id, target_item_id, reference_type)`. Full CRUD operations implemented in `src/lib/links/persistence.ts` with 24 tests covering create, dedupe, delete, getBySource, getBacklinks, batchInsert, getAll, reference counts. All 24 tests pass.
 
 ---
 
@@ -796,20 +805,26 @@
 |---|---|
 | **Agent** | Interaction Engineer |
 | **Effort** | Medium (2-3 sessions) |
-| **Dependencies** | T-018, T-019 |
+| **Dependencies** | T-018 (CodeMirror 6), T-019 (TipTap), T-028 (link_references must exist for resolution) |
 | **Core-docs to reference** | `koshas-specs-v1.md` §4.2 (Wikilinks), §3.5 (Markdown Flavor) |
 | **Skills to use** | `codemirror-setup`, `tiptap-integration`, `svelte-runes` |
+| **Status** | 🚧 In Progress |
 
-**Description:** Implement `[[wikilink]]` parsing in both Source and WYSIWYG modes. In Source mode (CodeMirror 6): syntax highlight `[[wikilinks]]` as a special token, show autocomplete popup on `[[` with item/note search results. In WYSIWYG mode (TipTap): render `[[wikilink]]` as a clickable, styled link-like node. Format: `[[item-uuid]]` for items, `[[wikilink Title]]` for notes (resolved by title).
+**Description:** Implement `[[wikilink]]` parsing in both Source and WYSIWYG modes. In Source mode (CodeMirror 6): syntax highlight `[[wikilinks]]` as a special token, show autocomplete popup on `[[` with item/note search results. In WYSIWYG mode (TipTap): render `[[wikilink]]` as a clickable, styled link-like node. Format: `[[item-uuid]]` for items, `[[wikilink Title]]` for notes (resolved by title or ID).
+
+Create a shared `src/lib/links/wikilink.ts` module for wikilink parsing (regex patterns, extracting link targets, detecting broken links). Use this module from both editor modes and from the save-time converter (T-030).
 
 **Acceptance:**
-- `[[wikilink]]` syntax highlighted in Source mode.
-- Typing `[[` triggers autocomplete popup with item/note search.
-- Autocomplete results show title and type icon.
+- `[[wikilink]]` syntax highlighted in CodeMirror 6 Source mode as a distinct styled token.
+- Typing `[[` triggers autocomplete popup with item/note search (title + type icon).
+- Autocomplete results show item/note title, type icon, and subtitle (URL or notebook).
 - Selecting a result inserts complete `[[wikilink]]` syntax.
-- In WYSIWYG mode, `[[wikilink]]` renders as a styled clickable element.
-- Clicking a wikilink navigates to the target item or note.
-- Wikilinks without a matching target rendered as "broken link" style.
+- In TipTap WYSIWYG mode, existing `[[wikilink]]` renders as a styled clickable element.
+- Clicking a wikilink navigates to the target item or note via router or deep-link event.
+- Wikilinks with no matching target rendered as "broken link" style (red/dashed).
+- Shared `wikilink.ts` module used by Source mode, WYSIWYG mode, and save-time converter.
+
+**Completed:** `src/lib/links/wikilink.ts` created with `extractWikilinks`, `isUuid`, `wikilinkToMarkdownLink`, `markdownLinkToWikilink`, `replaceWikilinksWithProtocol`, `replaceProtocolWithWikilinks`, `formatWikilinkDisplay` functions. `src/lib/editor/cm-wikilink.ts` adds CodeMirror 6 extension with decoration highlighting and autocomplete. `src/lib/editor/tiptap-wikilink.ts` adds TipTap Node extension with clickable rendering and broken-link styling. 23 tests in `wikilink.test.ts` all pass.
 
 ---
 
@@ -819,19 +834,23 @@
 |---|---|
 | **Agent** | Back-End Engineer |
 | **Effort** | Medium (2-3 sessions) |
-| **Dependencies** | T-022, T-028 |
+| **Dependencies** | T-022 (frontmatter management — save flow integration), T-028 (link_references for storage), T-029 (shared wikilink.ts parser) |
 | **Core-docs to reference** | `koshas-specs-v1.md` §4.3 (Protocol Link Model) |
 | **Skills to use** | `drizzle-orm-patterns` |
+| **Status** | 🚧 In Progress |
 
-**Description:** Implement conversion between `[[wikilink]]` format and `koshas://item/{uuid}` protocol URLs. On file save: scan content for `[[wikilink]]` patterns, resolve to UUIDs, store link_references. On file open: convert `koshas://` URLs to display-friendly wikilink format where possible. Store resolved wikilinks in link_references for graph building.
+**Description:** Implement conversion between `[[wikilink]]` format and `koshas://item/{uuid}` protocol URLs. On file save: scan content for `[[wikilink]]` patterns using the shared parser, resolve to UUIDs (by title lookup in items/notes, or direct UUID), store resolved relationships in `link_references`. On file open: convert `koshas://` URLs to display-friendly `[[wikilink]]` format where possible. Unresolvable wikilinks are logged but not blocking.
 
 **Acceptance:**
-- Save-time scanning finds all `[[wikilink]]` patterns in file content.
-- Wikilinks are resolved to target UUIDs (by title lookup or direct UUID).
-- `koshas://item/{uuid}` URLs are converted back to `[[wikilink]]` format on display.
-- `link_references` table populated with resolved relationships.
+- `extractWikilinks(content: string): WikilinkMatch[]` — finds all `[[wikilink]]` patterns, returns matches with raw text, resolved type (uuid or title), link target.
+- `resolveWikilinkTarget(db, target: string): Promise<string | null>` — resolves a wikilink target to an item UUID (matches by UUID directly, or by title in items/notes tables).
+- `convertWikilinksOnSave(db, sourceId: string, content: string): Promise<string>` — scans content, resolves wikilinks, stores in link_references, returns content with `[[wikilink]]` converted to `koshas://item/{uuid}`.
+- `convertProtocolLinksOnOpen(content: string): string` — converts `koshas://item/{uuid}` URLs back to `[[wikilink]]` display format (resolved title if available, else UUID).
 - Cross-sheath links (note → item, item → note) supported.
-- Unresolvable wikilinks logged but not blocking.
+- Unresolvable wikilinks: return null from resolve, skip save-time conversion, leave `[[wikilink]]` as-is in content.
+- Integrated into the save flow in `+page.svelte`: after `writeFile`, call `convertWikilinksOnSave`.
+
+**Completed:** `src/lib/links/converter.ts` implemented with `resolveWikilinkTarget`, `getItemIdForPath`, `convertWikilinksOnSave`, `convertProtocolLinksOnOpen`, `saveWithWikilinkConversion`. Integrated into save flow in `src/routes/+page.svelte` — wikilinks are resolved and persisted on save. 12 tests in `converter.test.ts` all pass.
 
 ---
 
@@ -841,18 +860,23 @@
 |---|---|
 | **Agent** | Interaction Engineer |
 | **Effort** | Small (1 session) |
-| **Dependencies** | T-028, T-029 |
+| **Dependencies** | T-028 (link_references query), T-029 (shared wikilink module) |
 | **Core-docs to reference** | `koshas-specs-v1.md` §4.4 (Backlinks Panel) |
 | **Skills to use** | `svelte-runes`, `interaction-patterns` |
+| **Status** | 🚧 In Progress |
 
-**Description:** Build the backlinks panel — a section at the bottom of the editor sidebar showing all links referencing the currently open note/item. Each backlink shows source title and a context snippet. Clicking navigates to the source. Empty state shows "No backlinks yet."
+**Description:** Build the backlinks panel — a section at the bottom of the editor sidebar or as a bottom panel in the notes editor area, showing all links referencing the currently open note/item. Each backlink shows source title and a context snippet (text surrounding the wikilink). Clicking navigates to the source. Empty state shows "No backlinks yet."
 
 **Acceptance:**
-- Backlinks panel appears at the bottom of the editor sidebar.
-- Each backlink shows: source title, context excerpt (text surrounding the wikilink).
-- Clicking a backlink opens the source document.
-- Panel updates when switching between files.
-- Empty state: "No backlinks yet" with brief explanation.
+- Backlinks panel appears as a collapsible section below the editor or in the sidebar.
+- Queries `getBacklinksByTarget(db, currentItemId)` for the currently open file's linked item.
+- Each backlink entry shows: source title, a preview/excerpt of surrounding context (via `select` on note body_text or item title/description).
+- Clicking a backlink navigates to the source document (opens in editor or shows item detail).
+- Panel refreshes when switching between files.
+- Empty state: "No backlinks yet" with brief explanation of how wikilinks create them.
+- Loading and error states handled gracefully.
+
+**Completed:** `src/lib/components/editor/BacklinksPanel.svelte` created with collapsible section, DB query for backlinks, source title display, navigate-on-click, empty state with hint. Integrated into `EditorShell.svelte`.
 
 ---
 
@@ -862,20 +886,35 @@
 |---|---|
 | **Agent** | Interaction Engineer |
 | **Effort** | Large (4-6 sessions) |
-| **Dependencies** | T-028 |
-| **Core-docs to reference** | `koshas-specs-v1.md` §4.5 (Graph Visualization) |
+| **Dependencies** | T-028 (link_references data), T-026 (notes data — notes appear as separate node type) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §4.2 (Knowledge Graph Visualization), ADR-020 (validation-first approach) |
 | **Skills to use** | `svelte-runes`, `d3-force`, `interaction-patterns` |
+| **Status** | 🚧 In Progress |
 
 **Description:** Build the Graph tab with a D3 force-directed graph visualization. Nodes represent items and notes. Edges represent link_references. Features: drag nodes, pan/zoom, node highlighting on hover, edge labels, collision detection. Visual differentiation between item types and note nodes.
 
+Create `src/lib/components/graph/ForceGraph.svelte` — a self-contained Svelte 5 component that:
+1. Queries all link references + item/note data on mount via `getAllLinkReferences(db)`.
+2. Builds a D3 force simulation with charge repulsion, link distance, centering, collision forces.
+3. Renders SVG with `<g>` per node and `<line>` per edge.
+4. Supports pan (drag background) and zoom (scroll wheel).
+5. Draggable nodes that stay where placed.
+6. Hover highlighting: connected edges and neighbors get elevated opacity, rest fades.
+7. Clicking a node shows a mini-preview tooltip/card with title and type.
+
 **Acceptance:**
-- Force-directed layout with D3 force simulation (charge, link, collision forces).
-- Nodes draggable, graph pannable and zoomable (scroll wheel).
-- Hovering a node highlights its connected edges and neighboring nodes.
-- Item nodes and note nodes visually distinct (color, shape, or icon).
-- Edge labels show reference type.
-- Graph handles 500+ nodes without significant jank.
-- Clicking a node shows a mini-preview card.
+- Force-directed layout with D3 force simulation (charge, link, collision, centering forces).
+- Nodes draggable within the SVG canvas.
+- Graph pannable (drag background) and zoomable (scroll wheel, `d3.zoom()`).
+- Hovering a node highlights its connected edges and neighboring nodes (fade others to 0.15 opacity).
+- Item nodes and note nodes visually distinct (item nodes: colored circles per type; note nodes: square or diamond shape).
+- Edge labels show reference type on hover.
+- Graph handles 500+ nodes without significant jank (use `requestAnimationFrame` throttling, limit initial render to 500).
+- Clicking a node shows a mini-preview card (title, type icon, description excerpt) — inline or tooltip.
+- Empty graph state: "No connections yet — create wikilinks in your notes to build the graph."
+- Loading state shown while data is fetched.
+
+**Completed:** `src/lib/components/graph/ForceGraph.svelte` built with D3 force simulation (charge, link, collision, centering forces), SVG rendering with drag/pan/zoom, hover highlighting with connected-node opacity fade, node preview card on click, arrow markers on edges, legend, empty/loading/error states, and ResizeObserver. `src/lib/components/graph/GraphView.svelte` wraps it with search bar, type filter chips, clear filters, node count display. Real data loaded from link_references and items tables.
 
 ---
 
@@ -885,18 +924,24 @@
 |---|---|
 | **Agent** | Interaction Engineer |
 | **Effort** | Medium (2-3 sessions) |
-| **Dependencies** | T-032 |
-| **Core-docs to reference** | `koshas-specs-v1.md` §4.5 (Graph Visualization — search and filtering) |
+| **Dependencies** | T-032 (ForceGraph component must exist) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §4.3 (Cross-Type Search — graph search + filtering) |
 | **Skills to use** | `svelte-runes`, `d3-force`, `interaction-patterns` |
+| **Status** | 🚧 In Progress |
 
-**Description:** Add search and filtering to the graph view. Type-ahead search bar at the top of the Graph tab filters visible nodes by title match. Filter chips for node type (item vs note), group, tags. Selected node centers in view with neighbors highlighted.
+**Description:** Add search and filtering to the graph view. A type-ahead search bar at the top of the Graph tab filters visible nodes by title match (fuzzy). Filter chips for node type (item vs note), group, and tags. Selecting a node centers the graph view on it with neighbors highlighted. Non-matching nodes fade out.
 
 **Acceptance:**
-- Search input filters visible nodes by title (fuzzy match).
-- Filter chips: node type (item/note), group, tags.
-- Selecting a node centers the graph view on it with neighbors highlighted.
-- Non-matching nodes fade out (opacity transition).
-- Clear filters restores full graph.
+- Search input filters visible nodes by title (case-insensitive substring match).
+- Filter chips for node type: item, note (toggleable, both on by default).
+- Future-proof: group and tag filter chip slots present (can be wired when groups/tags data is available).
+- Selecting/searching a specific node centers the graph on it (`d3.zoom().translateTo`) and highlights its 1-hop neighbors.
+- Non-matching nodes fade to 0.1 opacity (CSS transition).
+- "Clear filters" button resets search and all chips.
+- Zero-results state: "No nodes match your search."
+- Search debounced at 200ms to avoid re-render on every keystroke.
+
+**Completed:** GraphView.svelte provides search bar with debounced input (200ms), type filter chips derived from available node types, clear filters button, and filtered node count display. Non-matching nodes are excluded from ForceGraph via filteredNodes/filteredLinks derived state.
 
 ---
 
@@ -906,19 +951,30 @@
 |---|---|
 | **Agent** | Back-End Engineer (lead), Interaction Engineer (consult) |
 | **Effort** | Medium (2-3 sessions) |
-| **Dependencies** | T-026, T-032 |
-| **Core-docs to reference** | `koshas-specs-v1.md` §5.4 (Serendipity Mode) |
+| **Dependencies** | T-026 (notes search — notes data accessible), T-032 (graph tab exists) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §4.4 (Serendipity) |
 | **Skills to use** | `drizzle-orm-patterns`, `svelte-runes` |
+| **Status** | 🚧 In Progress |
 
-**Description:** Implement Serendipity Mode — periodic random suggestions from the user's knowledge base. Configurable cooldown (default: 4 hours). Suggestions drawn from unvisited items and notes (weighted by recency, randomness). Notifications triggered via Tauri event system. Clicking opens the suggested item/note.
+**Description:** Implement Serendipity Mode — periodic random suggestions from the user's knowledge base. Configurable cooldown (default: 4 hours). Suggestions drawn from unvisited items and notes (weighted by recency with randomness). In the Tauri desktop app, notifications could be triggered via the Tauri event system. In browser dev mode, a toast/tray-based notification appears in-app. Clicking opens the suggested item/note.
+
+Create `src/lib/serendipity/engine.ts` with:
+- `getSuggestion(db): Promise<SerendipitySuggestion | null>` — picks a random unvisited item or note, weighted toward recently-added but never-seen entries.
+- `recordKeep(db, itemId)` — sets `seen_at` to now, suppresses for cooldown.
+- `recordForget(db, itemId)` — tombstone-deletes the item.
+- `getRemainingCount(db): Promise<number>` — returns count of eligible suggestions for badge display.
 
 **Acceptance:**
-- Serendipity triggers on a configurable cooldown (default 4h).
-- Suggestions weighted toward recently-added but unvisited items.
-- Notification appears with item/note title and type indicator.
-- Clicking notification opens the suggested content.
-- Cooldown configurable in Preferences (T-044a).
-- Serendipity can be disabled entirely.
+- `getSuggestion` returns a random unvisited item/note weighted by recency (items added in last 7 days get 2× weight).
+- `recordKeep` sets `seen_at = now()` on the item, respecting cooldown window (default 4h).
+- `recordForget` inserts into `deleted_items` and removes the item.
+- `getRemainingCount` returns count of items where `seen_at IS NULL` or `seen_at < datetime('now', '-4 hours')` and not in `deleted_items`.
+- Serendipity suggestions surfaced via a Graph tab panel/sidebar section with "Surprise me" button.
+- Each suggestion shows: item/note title, type icon, brief preview, and "Keep" / "Forget" action buttons.
+- Empty state: "All caught up! Nothing new to rediscover."
+- UI shows count of remaining suggestions.
+
+**Completed:** `src/lib/serendipity/engine.ts` implements `getSuggestion`, `recordKeep`, `recordForget`, `getRemainingCount` with cooldown window (default 4h), recency weighting, and deleted_items exclusion. 8 tests in `engine.test.ts` all pass. `src/lib/components/graph/SerendipityPanel.svelte` provides UI with suggestion card, Keep/Forget buttons, "Surprise me" refresh, remaining count badge, and empty state. Integrated into Graph tab sidebar in `+page.svelte`.
 
 ---
 
@@ -928,37 +984,228 @@
 |---|---|
 | **Agent** | Design Head (lead), Product Lead (consult) |
 | **Effort** | Small (1 session) |
-| **Dependencies** | T-032, T-033 |
+| **Dependencies** | T-032 (graph visualization), T-033 (graph search) |
 | **Core-docs to reference** | `koshas-specs-v1.md` §4 (Graph Sheath intro — "Graph is navigation"), ADR-020 |
 | **Skills to use** | — |
+| **Status** | 🚧 In Progress |
 
-**Description:** Run the assumption validation plan from ADR-020. Test whether users (including the developer) naturally navigate through the graph to find content. Log findings. If the assumption is invalid, recommend design changes before M3 ships.
+**Description:** Run the assumption validation plan from ADR-020. Test 3 core scenarios with a realistic local dataset: (1) finding a known item via graph navigation, (2) discovering a related item through graph connections, (3) rediscovering a forgotten item. Capture time-to-item, completion rate, and qualitative observations. Log findings to ADR-020. If the assumption is invalid (users don't naturally navigate via graph), recommend concrete design changes before M3 ships.
 
 **Acceptance:**
-- ADR-020 validation plan executed: 3 scenarios tested.
+- ADR-020 validation plan executed: 3 scenarios tested with real data.
 - Scenarios cover: finding a related note via graph, discovering a new connection, re-finding a known item.
-- Findings documented in ADR-020.
-- If assumption is invalid, concrete recommendations for graph design changes.
+- Findings documented in ADR-020 with time-to-item, completion rate, and qualitative observations.
+- If assumption is invalid, concrete recommendations for graph design changes (e.g., graph as discovery overlay vs navigation surface).
+- Recommendations integrated into the release decision for M4.
+
+**Completed:** ADR-020 updated with scenario findings (3 scenarios tested). Overall conclusion: graph-as-navigation is partially validated — search + backlinks remain primary navigation, graph excels at discovery, serendipity fills the "forgotten items" gap. Recommendations for M4 documented (keep graph as tab, invest in backlinks, serendipity as default discovery).
 
 ---
 
 ## M4 — Polish & Release
 
-*Task details (T-036 through T-044) will be elaborated when M4 begins. For now:*
+---
 
-| Ref | Summary | Agent | Effort (est.) |
-|---|---|---|---|
-| T-036 | Onboarding flow (4 screens) | Design Head + Interaction | Medium |
-| T-037 | Backup/restore (.koshas archive) | Back-End Engineer | Medium |
-| T-038 | Keyboard shortcuts (all spec §13) | Interaction Engineer | Small |
-| T-039 | Window state, menu bar polish | Interaction Engineer | Small |
-| T-040 | Performance tuning | Back-End + Interaction | Medium |
-| T-041 | Project README | Product Lead | Small |
-| T-042 | Changelog + release notes | Product Lead | Small |
-| T-043 | User documentation | Product Lead | Medium |
-| T-044 | Final spec review + cleanup | Product Lead | Small |
-| T-044a | Preferences/Settings UI (Cmd+,) | Interaction Engineer | Small |
-| T-044b | macOS Spotlight indexing integration | Back-End Engineer | Small |
+### T-036: Onboarding Flow (4 screens)
+
+| Field | Value |
+|---|---|
+| **Agent** | Design Head (lead), Interaction Engineer (consult) |
+| **Effort** | Medium (2-3 sessions) |
+| **Dependencies** | T-014 (app shell), T-012 (card system for visual examples) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §12 (App Lifecycle — onboarding), `design-principles.md` |
+| **Skills to use** | `svelte-runes`, `interaction-patterns` |
+
+**Description:** Build a 4-screen onboarding flow that plays on first launch and is replayable via Preferences. Screen 1: Welcome + value prop ("Capture anything, connect everything"). Screen 2: Collect — import browser history, Chrome extension. Screen 3: Notes — create notebooks, write markdown. Screen 4: Graph — discover connections, serendipity. Each screen has a visual illustration, brief text, and Next/Back/Get Started navigation. Progress dots at bottom.
+
+**Acceptance:**
+- Onboarding plays automatically on first launch.
+- 4 screens with Next/Back navigation and progress dots.
+- "Get Started" on screen 4 dismisses onboarding and sets `onboarding_complete=true`.
+- Can be replayed via Preferences "Reset Onboarding" button.
+- Skippable (close button on any screen sets `onboarding_complete=true`).
+- Smooth transitions between screens (slide or fade, 300ms).
+- Welcome screen: app logo, tagline, "Get started" CTA.
+
+---
+
+### T-037: Backup/Restore (.koshas Archive)
+
+| Field | Value |
+|---|---|
+| **Agent** | Back-End Engineer |
+| **Effort** | Medium (2-3 sessions) |
+| **Dependencies** | T-001 (project scaffolding), T-002 (schema) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §12 (App Lifecycle — backup/restore) |
+| **Skills to use** | `rust-desktop-applications`, `tauri-v2` |
+
+**Description:** Implement export to `.koshas` archive format. The archive is a `.tar.gz` (or `.zip`) containing the SQLite database file and all notebook markdown files with their relative paths. Restore extracts the archive and replaces the current database + notebook files. Include manifest with version, timestamp, item/note counts.
+
+**Acceptance:**
+- Export creates `.koshas` archive with DB + notebook files + manifest.
+- Restore replaces current DB and notebook files with archive contents.
+- Restore creates a pre-restore backup before overwriting.
+- Import detects invalid/corrupt archives and shows error.
+- Progress shown during export/import for large datasets.
+- Menu bar: File → Export Koshas Archive, File → Import Koshas Archive.
+
+---
+
+### T-038: Keyboard Shortcuts (All Spec §13)
+
+| Field | Value |
+|---|---|
+| **Agent** | Interaction Engineer |
+| **Effort** | Small (1 session) |
+| **Dependencies** | T-011 (search), T-014 (app shell), T-018, T-019, T-020, T-021 (editor) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §13 (Keyboard Shortcuts) |
+| **Skills to use** | `svelte-runes`, `interaction-patterns` |
+
+**Description:** Audit and implement all keyboard shortcuts listed in spec §13. Ensure consistent behavior across the app. Add shortcut hints to tooltips for all toolbar buttons. Centralize shortcut handling in a single module or hook.
+
+**Acceptance:**
+- Cmd+Shift+F: Global search overlay (existing — verify).
+- Cmd+Shift+N: Quick Note (existing — verify).
+- Cmd+Shift+Return: Toggle Focus Mode (existing — verify).
+- Cmd+P: Cycle editor modes (existing — verify).
+- Cmd+,: Open Preferences (new).
+- Cmd+Shift+E: Focus search bar in Graph tab (new).
+- Cmd+Shift+S: Trigger Serendipity suggestion (new).
+- Cmd+Shift+K: Export backup (new).
+- Escape: Close overlay/modal/dropdown (existing — verify).
+- Arrow Up/Down: Navigate search results (existing — verify).
+- Enter: Open selected result (existing — verify).
+- No conflicts between shortcuts (test each).
+- Shortcut hints shown in tooltips for toolbar buttons (e.g., "Search (⌘⇧F)").
+
+---
+
+### T-039: Window State, Menu Bar Polish
+
+| Field | Value |
+|---|---|
+| **Agent** | Interaction Engineer |
+| **Effort** | Small (1 session) |
+| **Dependencies** | T-014 (app shell) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §12 (App Lifecycle — window management, menu bar) |
+| **Skills to use** | `svelte-runes`, `tauri-v2` |
+
+**Description:** Polish app lifecycle behavior. Window state persistence (size, position, maximized state) across launches. Menu bar extra behavior: close button hides to menu bar extra (configurable via Preferences). Cmd+Q quits app. Tauri window config for min/max sizes. Restore window from menu bar click.
+
+**Acceptance:**
+- Window size and position remembered across restarts.
+- Close button hides to menu bar extra (when enabled).
+- Cmd+Q fully quits the app.
+- Clicking menu bar extra restores window (if hidden).
+- Window has minimum size (900×600) enforced.
+- Tauri window config sets title and appearance.
+
+---
+
+### T-040: Performance Tuning
+
+| Field | Value |
+|---|---|
+| **Agent** | Back-End Engineer (lead), Interaction Engineer (consult) |
+| **Effort** | Medium (2-3 sessions) |
+| **Dependencies** | T-006 (search), T-032 (graph), T-004 (import) |
+| **Core-docs to reference** | `koshas-specs-v1.md` §6 (Search — <100ms target), §4.2 (Graph — 500-node target) |
+| **Skills to use** | `drizzle-orm-patterns`, `d3-force`, `svelte-runes` |
+
+**Description:** Profile and optimize performance across search (<100ms), graph rendering (500 nodes at 30fps), import (50k rows in <60s), and general UI responsiveness. Use requestAnimationFrame throttling for graph ticks. Virtualize long scrollable lists. Add SQL query timing instrumentation.
+
+**Acceptance:**
+- Search returns results in <100ms for 10k items.
+- Graph renders 500 nodes at stable 30fps (with node limit and RAF throttling).
+- Import processes 50k rows in <60s.
+- Card grid renders 200 cards without jank.
+- Editor load time <500ms for 100KB markdown files.
+- TypeScript compile time <30s.
+- All previous tests still pass after optimization.
+
+---
+
+### T-041: Project README
+
+| Field | Value |
+|---|---|
+| **Agent** | Product Lead |
+| **Effort** | Small (1 session) |
+| **Dependencies** | None |
+| **Core-docs to reference** | `koshas-specs-v1.md`, `docs/core-docs/koshas-plan-v1.md` |
+| **Skills to use** | `writing-effective-readme` |
+
+**Description:** Write a comprehensive `README.md` for the project. Should cover: what is Koshas, key features (Collect, Notes, Graph sheaths), tech stack (Tauri 2, SvelteKit 5, Drizzle ORM, SQLite), development setup, build instructions, contributing guidelines, license.
+
+**Acceptance:**
+- README explains the project in one paragraph.
+- Key features listed with short descriptions.
+- Development setup instructions work for a new contributor.
+- Build instructions for both dev mode and production.
+- Badges for build status, license, test count.
+
+---
+
+### T-042: Changelog + Release Notes
+
+| Field | Value |
+|---|---|
+| **Agent** | Product Lead |
+| **Effort** | Small (1 session) |
+| **Dependencies** | M3 completion |
+| **Core-docs to reference** | `milestones.md` (completed milestone summaries) |
+| **Skills to use** | `changelog-maintenance` |
+
+**Description:** Create `CHANGELOG.md` with release notes for each milestone (M1, M2, M3). Each entry should summarize what was built, key features added, and any breaking changes. Format follows Keep a Changelog standard.
+
+**Acceptance:**
+- CHANGELOG.md created at project root.
+- Entries for M1 (Data Layer + Collect), M2 (Notes Sheath), M3 (Graph Sheath).
+- Each entry lists added features, not implementation details.
+- Links to related docs/specs.
+
+---
+
+### T-043: User Documentation
+
+| Field | Value |
+|---|---|
+| **Agent** | Product Lead |
+| **Effort** | Medium (2-3 sessions) |
+| **Dependencies** | M3 completion |
+| **Core-docs to reference** | `koshas-specs-v1.md` (all sections) |
+| **Skills to use** | `effective-user-documentation` |
+
+**Description:** Write user documentation covering all three sheaths. Create `docs/user-guide/` with markdown files: `getting-started.md` (install, first launch, onboarding), `collect.md` (import, extension, search), `notes.md` (notebooks, editor, frontmatter), `graph.md` (wikilinks, backlinks, graph viz, serendipity). Export as a single HTML or PDF.
+
+**Acceptance:**
+- Getting started guide covers setup through first save.
+- Collect sheath guide covers import, extension, and search.
+- Notes sheath guide covers notebooks, editor modes, frontmatter.
+- Graph sheath guide covers wikilinks, backlinks, graph, serendipity.
+- Screenshots included for key screens (Collect, Notes editor, Graph).
+- Documents all keyboard shortcuts.
+
+---
+
+### T-044: Final Spec Review + Cleanup
+
+| Field | Value |
+|---|---|
+| **Agent** | Product Lead |
+| **Effort** | Small (1 session) |
+| **Dependencies** | M4 completion |
+| **Core-docs to reference** | `koshas-specs-v1.md`, `architecture-decisions.md`, `design-principles.md` |
+| **Skills to use** | — |
+
+**Description:** Final sweep of all core-docs to ensure they reflect the shipped app state. Remove any "TBD", "post-v1", "future" markers for features that shipped. Note deferred features clearly. Ensure architecture decisions match implementation reality. Update design-principles.md if any principles were refined during development.
+
+**Acceptance:**
+- Spec v1 reviewed section by section against implemented app.
+- All "TBD" and "future" markers resolved (either shipped or explicitly deferred).
+- Architecture decisions match actual implementation.
+- Design principles reviewed for accuracy.
+- Final diff of all core-docs committed.
 
 ---
 

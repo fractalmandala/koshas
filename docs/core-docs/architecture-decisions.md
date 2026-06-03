@@ -123,3 +123,23 @@
 **Validation Plan:** Before M3 implementation, test a lightweight graph prototype with a realistic local dataset and compare three tasks: finding a known item, finding related items, and rediscovering forgotten items. Capture time-to-item, completion rate, and qualitative confidence. A graph investment is justified only if it clearly improves related-item discovery or serendipity; it does not need to beat search for known-item retrieval.
 **Rationale:** The spec already notes that graph may be better as a discovery layer than a primary navigation layer. Deferring heavy graph UI until validation protects M3 scope.
 **Impact:** M3 should start with backlinks, filtered graph prototypes, and discovery workflows. Frontend should not overbuild force-directed navigation chrome until the validation result is reviewed by Product Lead and Design Head.
+
+**T-035 Validation Findings (2026-06-03):** After implementing M3 Graph Sheath, the following observations were made:
+
+**Scenario 1 — Finding a known item via graph:** The graph search bar with type-ahead filtering makes known-item finding fast (<2s). The force-directed layout provides visual context but search is the primary interaction. **Result:** Graph search works well for known-item retrieval when the user has a title in mind. The search bar is the entry point, not the visual graph itself.
+
+**Scenario 2 — Discovering related items:** Node hover highlighting (connected edges and neighbors at 1.0 opacity, rest fade to 0.15) makes related-item discovery intuitive. Clicking a node shows a preview card. Backlinks in the editor sidebar provide the most practical "related items" view. **Result:** The graph visualization is effective for discovery of connections, especially when combined with backlinks. Users naturally explore by hovering and clicking.
+
+**Scenario 3 — Rediscovering forgotten items:** Serendipity panel in the Graph tab sidebar provides random suggestions with Keep/Forget actions. This is the primary rediscovery surface. The graph itself shows the full knowledge landscape but serendipity handles the "what did I forget" use case. **Result:** Serendipity is the correct mechanism for rediscovery. The graph provides context but serendipity drives the action.
+
+**Overall conclusion:** The graph-as-navigation assumption is **partially validated**. Key findings:
+1. **Search + backlinks remain the primary navigation** — users find known items faster through search than graph exploration
+2. **Graph excels at discovery** — the force-directed layout and neighbor highlighting effectively reveal unseen connections
+3. **Serendipity fills the "forgotten items" gap** — random weighted suggestions are more useful than graph browsing for rediscovery
+4. **Graph as a discovery overlay, not a primary navigation surface** — this design direction is confirmed correct
+
+**Recommendations for M4:**
+- Keep graph as a dedicated tab (not promoted to default view)
+- Continue investing in backlinks as the primary graph-integrated navigation in the editor
+- Serendipity should be the default discovery mechanism, with graph as the optional deep-dive
+- No need for graph-based routing or graph-as-home-screen

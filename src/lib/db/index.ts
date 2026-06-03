@@ -1,19 +1,40 @@
-import Database from '@tauri-apps/plugin-sql';
+import { browser } from '$app/environment';
 
 import { runMaintenanceDedupe } from '$lib/dedupe/maintenance';
 import { initializeGroupStorage } from '$lib/groups/storage';
 
-let db: Database | null = null;
-let initialized = false;
+// We use a type alias for portability
+type QueryResult = {
+	rowsAffected: number;
+	lastInsertId?: number;
+};
 
-export async function getDatabase(): Promise<Database> {
-	if (db) return db;
-
-	db = await Database.load('sqlite:koshas.db');
-	return db;
+export interface DatabaseLike {
+	execute(sql: string, params?: unknown[]): Promise<QueryResult>;
+	select<T = Record<string, unknown>[]>(sql: string, params?: unknown[]): Promise<T>;
+	path: string;
+	close(): Promise<boolean>;
 }
 
-export async function getInitializedDatabase(): Promise<Database> {
+let db: DatabaseLike | null = null;
+let initialized = false;
+
+export async function getDatabase(): Promise<DatabaseLike> {
+	if (db) return db;
+
+	if (browser) {
+		// In browser dev mode, use sql.js WASM
+		const { BrowserDatabase } = await import('./browser-db');
+		db = await BrowserDatabase.load('sqlite:koshas.db');
+	} else {
+		// In SSR/Tauri, use the Tauri SQL plugin
+		const Database = (await import('@tauri-apps/plugin-sql')).default;
+		db = await Database.load('sqlite:koshas.db');
+	}
+	return db!;
+}
+
+export async function getInitializedDatabase(): Promise<DatabaseLike> {
 	const database = await getDatabase();
 	if (initialized) return database;
 
@@ -22,7 +43,7 @@ export async function getInitializedDatabase(): Promise<Database> {
 	return database;
 }
 
-async function initializeDatabase(database: Database): Promise<void> {
+async function initializeDatabase(database: DatabaseLike): Promise<void> {
 	for (const statement of getInitializeDatabaseStatements()) {
 		await database.execute(statement);
 	}
@@ -131,6 +152,19 @@ export function getInitializeDatabaseStatements(): string[] {
 		'CREATE UNIQUE INDEX IF NOT EXISTS deleted_items_normalized_url_unique ON deleted_items (normalized_url)',
 		'CREATE UNIQUE INDEX IF NOT EXISTS deleted_items_file_path_unique ON deleted_items (file_path)',
 		'CREATE INDEX IF NOT EXISTS deleted_items_deleted_at_idx ON deleted_items (deleted_at)',
+		`
+			CREATE TABLE IF NOT EXISTS link_references (
+				id text PRIMARY KEY NOT NULL,
+				source_item_id text NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+				target_item_id text NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+				reference_type text,
+				created_at text DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+				updated_at text DEFAULT (CURRENT_TIMESTAMP) NOT NULL
+			)
+		`,
+		'CREATE INDEX IF NOT EXISTS link_references_source_item_id_idx ON link_references (source_item_id)',
+		'CREATE INDEX IF NOT EXISTS link_references_target_item_id_idx ON link_references (target_item_id)',
+		'CREATE UNIQUE INDEX IF NOT EXISTS link_references_pair_unique ON link_references (source_item_id, target_item_id, reference_type)',
 		`
 			CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
 				title,

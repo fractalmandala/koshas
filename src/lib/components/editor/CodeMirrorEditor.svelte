@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { EditorView, basicSetup } from 'codemirror';
 	import { EditorState } from '@codemirror/state';
 	import { markdown } from '@codemirror/lang-markdown';
 	import { oneDark } from '@codemirror/theme-one-dark';
 	import { keymap } from '@codemirror/view';
 	import { defaultKeymap, indentWithTab } from '@codemirror/commands';
+	import { wikilinkExtension } from '$lib/editor/cm-wikilink';
 
 	let {
 		value = '',
@@ -37,7 +38,8 @@
 						onChange(update.state.doc.toString());
 					}
 				}),
-				EditorView.editable.of(!readonly)
+				EditorView.editable.of(!readonly),
+				...wikilinkExtension()
 			]
 		});
 
@@ -91,4 +93,28 @@
 
 		:global(.cm-gutters)
 			display: none
+
+		:global(.cm-wikilink)
+			background: rgba(99, 102, 241, 0.12)
+			border-radius: 3px
+			padding: 1px 2px
+			color: var(--theme-main, #6366f1)
+			cursor: pointer
+			border-bottom: 1px dashed var(--theme-main, #6366f1)
+
+		:global(.cm-wikilink-broken)
+			background: rgba(239, 68, 68, 0.1)
+			border-radius: 3px
+			padding: 1px 2px
+			color: #ef4444
+			cursor: help
+			border-bottom: 1px dashed #ef4444
+
+		:global(.cm-wikilink-tooltip)
+			padding: 4px 8px
+			font-size: 12px
+			border-radius: 4px
+			background: #1e1e2e
+			color: #cdd6f4
+			border: 1px solid #45475a
 </style>

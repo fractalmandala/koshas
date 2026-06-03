@@ -8,23 +8,9 @@
 
 ---
 
-## Design Direction: Verdure
-
-The chosen direction is **Verdure** — warm, organic, tactile. Nature/growth themed so the green palette reads intentional. The metaphor is a living knowledge companion, not a sterile tool.
+## Design Direction
 
 Two themes: **Dark** and **Light**, sharing the same component structure and tokens.
-
----
-
-## Visual Language
-
-| Concept | Expression |
-|---|---|
-| **Texture** | Paper grain overlay (SVG noise filter, mix-blend-mode, ~0.3 opacity) |
-| **Depth** | Cards have a layered-paper `::before` pseudo-element (offset shadow creating a "sheath" stack effect) |
-| **Growth** | Sidebar vine motif — nodes connected by a stem, buds that bloom active, leaves that unfurl |
-| **Material** | Surfaces feel matte, not glossy. Shadows are subtle and organic. |
-| **Accents** | Green tones for interaction cues — selections, hovers, active states, informational elements |
 
 ---
 
@@ -45,28 +31,40 @@ Two themes: **Dark** and **Light**, sharing the same component structure and tok
 | `--theme-tertiary` | `#0cac3a` | Tertiary accent |
 | `--medium-00` | `#ececec` | Subtle borders |
 | `--medium-10` | `#cecece` | Borders, dividers |
-| `--medium-20` | `#898b92` | Scrollbars, muted elements |
+| `--medium-20` | `#e5e5e5` | Scrollbars, muted elements |
 | `--medium-30` | `#999ba2` | Hover scrollbar |
-| `--shadow-1` | RGBA `(50,52,58,0.06)` | Subtle card shadow |
-| `--shadow-2` | RGBA `(50,52,58,0.05/0.18)` | Elevated surface shadow |
-| `--shadow-3` | RGBA `(50,52,58,0.18/0.20)` | Modal/dropdown shadow |
+| 	`--medium-40` | `#898b92` | |
+| `--shadow-1-color` | RGBA `(50,52,58,0.06)` | Subtle card shadow |
+| `--shadow-2-color` | RGBA `(50,52,58,0.05)` | Elevated surface shadow |
+| `--shadow-3-color` | RGBA `(50,52,58,0.18)` | Elevated surface shadow |
+| `--shadow-4-color` | RGBA `(50,52,58,0.20)` | Modal/dropdown shadow |
+
+refer file [[./theme-templates/koshas-default-light.html]] for up-to-date usage of light theme
 
 ### Dark Theme (`body.dark`)
 
 | Token | Value | Usage |
 |---|---|---|
-| `--surface-00` | `#111111` | Primary surface |
-| `--surface-10` | `#141313` | Secondary surface |
-| `--surface-20` | `#232422` | Tertiary surface |
+| `--surface-00` | `#0b0b0b` | Primary surface |
+| `--surface-10` | `#141414` | Secondary surface |
+| `--surface-20` | `#222220` | Tertiary surface |
 | `--fore-primary` | `#e0e0e1` | Headings, primary text |
 | `--fore-secondary` | `#909091` | Body text |
 | `--fore-tertiary` | `#626262` | Captions, metadata |
 | `--theme-main` | `#0ab858` | Primary accent |
 | `--theme-secondary` | `#0dd179` | Darker accent |
 | `--theme-tertiary` | `#0cac3a` | Tertiary accent |
-| `--medium-00` | `#131313` | Subtle borders |
-| `--medium-10` | `#3a3a3a` | Borders, dividers |
-| `--medium-20` | `#585858` | Scrollbars, muted elements |
+| `--medium-00` | `#1e1e1c` | Subtle borders |
+| `--medium-10` | `#303030` | Borders, dividers |
+| `--medium-20` | `#505050` | Scrollbars, muted elements |
+| `--medium-30` |  `#999ba2` | |
+| `--medium-40` | `#898b92` | |
+| `--shadow-1-color` | RGBA `(0,0,0,0.7)` | |
+| `--shadow-2-color` | RGBA `(0,0,0,1)` | |
+| `--shadow-3-color` | RGBA `(0,0,0,1)` | |
+| `--shadow-4-color` | RGBA `(0,0,0,0.8)` | |
+
+refer file [[./theme-templates/koshas-default-dark.html]] for up-to-date usage of dark theme
 
 ---
 

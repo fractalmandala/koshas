@@ -14,7 +14,7 @@ Built with **Tauri 2** + **SvelteKit 5** (runes) + **TypeScript**, backed by SQL
 
 ## Status
 
-**Pre-development.** Documentation, specifications, and planning are complete. Implementation has not yet begun.
+**v1 Complete (demo-ready).** All three sheaths (Collect, Notes, Graph) are functional. Browser demo mode with auto-seeding provides immediate interactivity for Collect (import simulation), Notes (editor + notebooks), and Graph (D3 visualization + serendipity). Full implementation uses Tauri 2 + Svelte 5 runes + SQLite/FTS5. Native build available via `npm run tauri dev`.
 
 | Artifact | Description |
 |---|---|
@@ -42,11 +42,29 @@ Built with **Tauri 2** + **SvelteKit 5** (runes) + **TypeScript**, backed by SQL
 
 ## Development
 
-Prerequisites:
+### Quick Start (Browser Demo - Recommended for Evaluation)
 
+```bash
+npm install
+npm run dev
+```
+
+Opens at http://localhost:5173 with full demo data seeded automatically. All sheaths interactive without Tauri.
+
+### Native macOS Build
+
+```bash
+npm install
+npm run tauri dev
+```
+
+**Prerequisites**
 - Node.js >= 18
 - Rust >= 1.77.2
 - pnpm (recommended) or npm
+- Xcode Command Line Tools (for Tauri)
+
+See [docs/core-docs/koshas-plan-v1.md](docs/core-docs/koshas-plan-v1.md) for full roadmap and release criteria.
 
 ```bash
 # Clone

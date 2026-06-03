@@ -15,9 +15,13 @@
 	import NotebookGrid from '$lib/components/notes/NotebookGrid.svelte';
 	import EditorShell from '$lib/components/editor/EditorShell.svelte';
 	import QuickNote from '$lib/components/notes/QuickNote.svelte';
+	import ForceGraph from '$lib/components/graph/GraphView.svelte';
+	import SerendipityPanel from '$lib/components/graph/SerendipityPanel.svelte';
 	import { getNotebookState } from '$lib/notebooks/state.svelte';
 	import { readFile, writeFile } from '$lib/notes/sync';
 	import { parseFrontmatter } from '$lib/notes/frontmatter';
+	import { convertWikilinksOnSave } from '$lib/links/converter';
+	import { seedDemoData } from '$lib/demo/seed';
 
 	interface ImportProgress {
 		browserName: string;
@@ -79,9 +83,31 @@
 
 	async function handleNoteSave(path: string, content: string) {
 		try {
-			await writeFile(path, content);
+			// Resolve wikilinks, persist link_references, and convert [[wikilinks]] to koshas:// links
+			const db = await getInitializedDatabase();
+			const dbExecutor = {
+				select: <T>(sql: string, params?: unknown[]) => db.select<T>(sql, params),
+				execute: (sql: string, params?: unknown[]) => db.execute(sql, params)
+			};
+
+			const { getItemIdForPath } = await import('$lib/links/converter');
+			const sourceItemId = await getItemIdForPath(dbExecutor, path);
+
+			let contentToWrite = content;
+			if (sourceItemId) {
+				// Convert [[wikilinks]] → koshas://item/{uuid} and persist link_references
+				contentToWrite = await convertWikilinksOnSave(
+					dbExecutor,
+					dbExecutor,
+					sourceItemId,
+					content
+				);
+			}
+
+			await writeFile(path, contentToWrite);
+
 			// Update local list
-			const parsed = parseFrontmatter(content);
+			const parsed = parseFrontmatter(contentToWrite);
 			noteList = noteList.map((n) =>
 				n.filePath === path
 					? {
@@ -92,8 +118,8 @@
 						}
 					: n
 			);
-		} catch {
-			// Handle error
+		} catch (e) {
+			console.warn('[NoteSave] Error during save:', e);
 		}
 	}
 
@@ -150,6 +176,14 @@
 
 		void loadSources();
 		void loadItems();
+
+		// Auto-seed demo data if empty and in browser
+		setTimeout(async () => {
+			if (!tauriAvailable && items.length === 0 && !loadingSources) {
+				console.log('[Demo] Auto-seeding because app is empty');
+				await handleSeedDemo();
+			}
+		}, 1000);
 
 		const cleanupCallbacks: Array<() => void> = [];
 
@@ -224,14 +258,34 @@
 		errorMessage = null;
 
 		try {
-			const { invoke } = await import('@tauri-apps/api/core');
-			sources = await invoke<DetectedBrowserSource[]>('detect_browser_sources');
+			const core = await import('@tauri-apps/api/core').catch(() => null);
+			if (!core || !core.invoke) throw new Error('Tauri API not available');
+			
+			sources = await core.invoke<DetectedBrowserSource[]>('detect_browser_sources');
 			tauriAvailable = true;
 			statusMessage = sources.length > 0 ? 'Sources checked' : 'No browser sources found';
 		} catch (error) {
 			tauriAvailable = false;
-			statusMessage = 'Desktop backend offline';
-			errorMessage = formatError(error);
+			statusMessage = 'Demo Mode (Backend Offline)';
+			// Mock sources for browser mode
+			sources = [
+				{
+					browserName: 'Chrome',
+					profileName: 'Demo Profile',
+					historyPath: '/mock/chrome/history',
+					bookmarksPath: '/mock/chrome/bookmarks',
+					exists: true,
+					browserRunning: false
+				},
+				{
+					browserName: 'Brave',
+					profileName: 'Demo Profile',
+					historyPath: '/mock/brave/history',
+					bookmarksPath: null,
+					exists: true,
+					browserRunning: false
+				}
+			];
 		} finally {
 			loadingSources = false;
 		}
@@ -243,15 +297,37 @@
 		statusMessage = `Importing ${source.browserName}`;
 
 		try {
-			const { invoke } = await import('@tauri-apps/api/core');
-			const result = await runBrowserImport(
-				{ invoke, getDatabase: getInitializedDatabase },
-				source
-			);
-			results = [{ browserName: source.browserName, ...result }, ...results];
-			statusMessage = `${source.browserName} import complete`;
-			counter += result.inserted + result.merged;
+			if (tauriAvailable) {
+				const core = await import('@tauri-apps/api/core').catch(() => null);
+				if (!core || !core.invoke) throw new Error('Tauri API not available');
+				
+				const result = await runBrowserImport(
+					{ invoke: core.invoke, getDatabase: getInitializedDatabase },
+					source
+				);
+				results = [{ browserName: source.browserName, ...result }, ...results];
+				statusMessage = `${source.browserName} import complete`;
+				counter += result.inserted + result.merged;
+			} else {
+				// Mock import for browser mode
+				await new Promise((resolve) => setTimeout(resolve, 1500));
+				const db = await getInitializedDatabase();
+				await seedDemoData(db);
+				results = [
+					{
+						browserName: source.browserName,
+						importedCount: 10,
+						inserted: 10,
+						merged: 0,
+						sourcesUpserted: 1
+					},
+					...results
+				];
+				statusMessage = `Demo: ${source.browserName} history simulated`;
+				counter += 10;
+			}
 			await loadItems();
+			if (activeTab === 'notes') await loadNotes();
 		} catch (error) {
 			errorMessage = formatError(error);
 			statusMessage = `${source.browserName} import failed`;
@@ -263,9 +339,49 @@
 	async function cancelImport() {
 		if (!activeImportId) return;
 		try {
-			const { invoke } = await import('@tauri-apps/api/core');
-			await invoke('cancel_browser_import', { importId: activeImportId });
-			statusMessage = 'Cancelling import';
+			const core = await import('@tauri-apps/api/core').catch(() => null);
+			if (core && core.invoke) {
+				await core.invoke('cancel_browser_import', { importId: activeImportId });
+				statusMessage = 'Cancelling import';
+			}
+		} catch (error) {
+			errorMessage = formatError(error);
+		}
+	}
+
+	async function handleSeedDemo() {
+		try {
+			const db = await getInitializedDatabase();
+			await seedDemoData(db);
+			await loadItems();
+
+			// Reload notebooks and notes
+			const nsState = getNotebookState();
+			await nsState.loadNotebooks();
+			if (activeTab === 'notes') await loadNotes();
+
+			statusMessage = 'Demo data seeded';
+		} catch (error) {
+			errorMessage = formatError(error);
+		}
+	}
+
+	async function handleClearData() {
+		if (!confirm('Are you sure you want to clear all data? This cannot be undone.')) return;
+		try {
+			const db = await getInitializedDatabase();
+			const tables = ['items', 'sources', 'link_references', 'notebooks', 'notebook_folders', 'notes', 'deleted_items'];
+			for (const table of tables) {
+				await db.execute(`DELETE FROM ${table}`);
+			}
+			await loadItems();
+
+			// Clear notebook state
+			const nsState = getNotebookState();
+			await nsState.loadNotebooks();
+			if (activeTab === 'notes') await loadNotes();
+
+			statusMessage = 'Data cleared';
 		} catch (error) {
 			errorMessage = formatError(error);
 		}
@@ -330,9 +446,15 @@
 	function handleSpaceDelete(id: string) {
 		spaces = spaces.filter((s) => s.id !== id);
 	}
+	async function handleTabChange(tab: TabId) {
+		activeTab = tab;
+		if (tab === 'notes') {
+			await loadNotes();
+		}
+	}
 </script>
 
-<AppShell {activeTab} onTabChange={(tab) => { activeTab = tab; }}>
+<AppShell {activeTab} onTabChange={handleTabChange}>
 	{#snippet sidebarAside()}
 		{#if activeTab === 'notes'}
 			<NotebookList onNotebookSelect={() => { handleBack(); }} />
@@ -342,6 +464,11 @@
 					onFileSelect={handleNoteOpen}
 				/>
 			{/if}
+		{:else if activeTab === 'graph'}
+			<div class="sidebar-section-header">
+				<span>Discover</span>
+			</div>
+			<SerendipityPanel />
 		{/if}
 	{/snippet}
 
@@ -427,6 +554,10 @@
 			{#if activeTab === 'notes' && !selectedFilePath}
 				<QuickNote onNoteCreated={handleNoteCreated} />
 			{/if}
+		{:else if activeTab === 'graph'}
+			<div class="graph-tab">
+				<ForceGraph height="calc(100vh - var(--titlebar-h, 0px) - 120px)" />
+			</div>
 		{:else}
 			<div class="content-pad">
 				<div class="collect-head">
@@ -437,11 +568,38 @@
 					<div class="headrow-sub">
 						<span class="pill">{items.length} items</span>
 						<span class="pill">{counter > 0 ? `${counter} imported` : 'No imports yet'}</span>
+						<div class="demo-controls" style="margin-left:auto;display:flex;gap:8px;">
+							<button type="button" class="secondary" onclick={handleSeedDemo} style="font-size:11px;padding:2px 8px;border-radius:4px;">Seed Demo</button>
+							<button type="button" class="secondary" onclick={handleClearData} style="font-size:11px;padding:2px 8px;border-radius:4px;opacity:0.6;">Clear</button>
+						</div>
 					</div>
 				</div>
 
 				{#if errorMessage}
 					<p class="error" role="alert" style="padding:12px;border:1px solid #d5b2aa;border-radius:8px;background:#fff2ef;color:#77352e;margin-bottom:16px;">{errorMessage}</p>
+				{/if}
+
+				{#if !tauriAvailable}
+					<div class="notice demo-notice" style="padding:16px;border:1px solid #c2e1d1;border-radius:12px;background:#f0f9f4;margin-bottom:24px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh-1);">
+						<div style="display:flex;align-items:center;gap:12px;">
+							<div style="font-size:24px;">✨</div>
+							<div>
+								<h3 style="font-size:14px;color:#1e5d40;font-weight:700;">Koshas Browser Demo</h3>
+								<p style="font-size:13px;color:#2e7d5a;">Experience the <strong>Collect, Notes, and Graph</strong> sheaths without the desktop app.</p>
+							</div>
+						</div>
+						<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px;padding-top:8px;border-top:1px solid #c2e1d1;">
+							<div style="font-size:11px;color:#1e5d40;">
+								<strong>1. Collect</strong><br/>Click "Import" below to simulate history capture.
+							</div>
+							<div style="font-size:11px;color:#1e5d40;">
+								<strong>2. Write</strong><br/>Switch to Notes tab, select the notebook, and edit.
+							</div>
+							<div style="font-size:11px;color:#1e5d40;">
+								<strong>3. Connect</strong><br/>Use [[wikilinks]] in notes to build the Graph.
+							</div>
+						</div>
+					</div>
 				{/if}
 
 				<!-- Browser Import Section -->
@@ -459,13 +617,6 @@
 							{showConsole ? 'Hide log' : 'Show log'}
 						</button>
 					</div>
-
-					{#if !tauriAvailable}
-						<div class="notice" style="padding:14px;border:1px solid var(--medium-10);border-radius:8px;background:var(--surface-20);margin-bottom:12px;">
-							<h3 style="font-size:14px;">Desktop backend offline</h3>
-							<p style="font-size:13px;color:var(--fore-secondary);">Run the Tauri app to detect local browser databases.</p>
-						</div>
-					{/if}
 
 					<div class="source-grid">
 						{#each sources as source (source.browserName + source.profileName + source.historyPath)}
@@ -557,10 +708,10 @@
 							onDelete={handleSpaceDelete}
 						/>
 					</div>
-				{/if}
-			</div>
-		{/if}
-	</div>
+			{/if}
+		</div>
+	{/if}
+</div>
 </AppShell>
 
 <SearchOverlay
@@ -680,4 +831,12 @@
 		font-size: 13px
 		color: var(--fore-tertiary)
 		margin-top: 4px
+
+	.sidebar-section-header
+		padding: 10px 12px 4px
+		font-size: 10px
+		font-weight: 600
+		text-transform: uppercase
+		letter-spacing: 0.05em
+		color: var(--fore-quaternary)
 </style>

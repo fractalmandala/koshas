@@ -45,7 +45,7 @@ These are known to the model environment. No local files needed. Agents use thes
 | **Tauri CLI** | `cargo install tauri-cli` | Back-End Engineer | Build, dev, and packaging |
 | **Node.js + npm** | System or nvm | All agents | JS/TS dependencies, build tooling |
 | **Playwright** | `npm init playwright` | Interaction Engineer | E2E tests |
-| **Chrome** | Installed on system | Interaction Engineer | Extension testing |
+| **Helium Browser** | Installed on system | Interaction Engineer | Extension testing |
 | **SQLite CLI** | `brew install sqlite` | Back-End Engineer | DB inspection, debugging |
 
 ---

@@ -102,8 +102,12 @@ pub fn read_file_contents(path: &str) -> Result<String, String> {
     std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
-/// Write string content to a file.
+/// Write string content to a file. Creates parent directories if they don't exist.
 pub fn write_file_contents(path: &str, content: &str) -> Result<(), String> {
+    let p = Path::new(path);
+    if let Some(parent) = p.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create directories: {}", e))?;
+    }
     std::fs::write(path, content).map_err(|e| format!("Failed to write file: {}", e))
 }
 
