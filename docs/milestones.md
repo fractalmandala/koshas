@@ -38,7 +38,7 @@
 
 ---
 
-## M2 — Notes Sheath
+## M2 — Notes Sheath ✅ Complete (2026-06-03)
 
 **Dependencies:** M1
 **Acceptance criteria:**
@@ -49,6 +49,8 @@
 - Quick notes and focus mode work.
 - File openability matrix implemented (.md, .txt, .json, images, PDF, docx).
 - Cross-sheath search includes notes results.
+
+All 13 tasks implemented and verified. 93/93 tests pass, 0 type errors, Rust cargo check passes.
 
 | Ref | Task | Agent | Effort |
 |---|---|---|---|
@@ -68,7 +70,7 @@
 
 ---
 
-## M3 — Graph Sheath
+## M3 — Graph Sheath (Current)
 
 **Dependencies:** M1, M2
 **Acceptance criteria:**

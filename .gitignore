@@ -38,7 +38,11 @@ coverage/
 
 # Generated
 *.tsbuildinfo
+koshas.db
 
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Pre-spec / brainstorm docs (not for agents)
+docs/ignore-*.md

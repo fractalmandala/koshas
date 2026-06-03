@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Koshas Capture</title>
+		<link rel="stylesheet" href="src/popup.css" />
+	</head>
+	<body>
+		<main class="popup-shell">
+			<section id="pending-state" class="state" hidden>
+				<h1>Koshas is not open</h1>
+				<p id="pending-copy">Your capture is saved locally. Launch Koshas to send it now.</p>
+				<button id="launch-button" type="button">Launch Koshas</button>
+			</section>
+
+			<section id="ready-state" class="state" hidden>
+				<h1>Koshas Capture</h1>
+				<p>Use the right-click menu to save the current page, selected text, or images.</p>
+			</section>
+		</main>
+
+		<script type="module" src="src/popup.js"></script>
+	</body>
+</html>

@@ -30,27 +30,27 @@
 }
 
 .dark {
-  --surface-10: #141313;
-  --surface-00: #111111;
-  --surface-20: #232422;
+  --surface-10: #080807;
+  --surface-00: #161614;
+  --surface-20: #222220;
   --fore-primary: #e0e0e1;
   --fore-secondary: #909091;
   --fore-tertiary: #626262;
   --theme-main: #0ab858;
   --theme-secondary: #0dd179;
   --theme-tertiary: #0cac3a;
-  --medium-00: #131313;
-  --medium-10: #3a3a3a;
-  --medium-20: #585858;
+  --medium-00: #1e1e1c;
+  --medium-10: #303030;
+  --medium-20: #505050;
   --medium-40: #898b92;
   --medium-30: #999ba2;
-  --shadow-1-color: rgba(0,0,0,1);
-  --shadow-2-color: rgba(0,0,0,1);
-  --shadow-3-color: rgba(0,0,0,1);
-  --shadow-4-color: rgba(0,0,0,1);
-  --sh-1: 0 1px 2px var(--shadow-1-color);
-  --sh-2: 0 2px 4px var(--shadow-2-color), 0 14px 30px var(--shadow-3-color);
-  --sh-3: 0 4px 10px var(--shadow-1-color), 0 24px 50px var(--shadow-4-color);
+  --shadow-1-color: rgba(0,0,0,0.7);
+  --shadow-2-color: rgba(0,0,0,0.5);
+  --shadow-3-color: rgba(0,0,0,0.8);
+  --shadow-4-color: rgba(0,0,0,0.9);
+  --sh-1: 0 1px 3px var(--shadow-1-color);
+  --sh-2: 0 2px 6px var(--shadow-2-color), 0 12px 28px var(--shadow-3-color);
+  --sh-3: 0 4px 12px var(--shadow-2-color), 0 20px 44px var(--shadow-4-color);
 }
 
 * {
@@ -195,8 +195,15 @@ button {
   top: 16px;
   left: 16px;
   height: calc(100% - 48px);
-  box-shadow: var(--sh-2);
   overflow: hidden;
+}
+
+.light .rail {
+  box-shadow: var(--sh-2);
+}
+
+.dark .rail {
+  box-shadow: var(--sh-2);
 }
 
 .rail-head {
@@ -611,6 +618,16 @@ button {
     columns: 3 248px;
   }
 }
+@media (max-width: 1060px) {
+  .masonry {
+    columns: 2 248px;
+  }
+}
+@media (max-width: 680px) {
+  .masonry {
+    columns: 1;
+  }
+}
 .card {
   break-inside: avoid;
   margin-bottom: 22px;
@@ -619,7 +636,7 @@ button {
   border: 1px solid var(--medium-10);
   border-radius: var(--radius);
   box-shadow: var(--sh-1);
-  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  transition: transform 0.3s var(--ease), box-shadow 0.45s var(--ease), border-color 0.3s var(--ease);
   overflow: hidden;
   /* layered-paper backing — the 'sheath' depth */
 }
@@ -630,14 +647,15 @@ button {
   border-radius: var(--radius);
   box-shadow: 5px 6px 0 -1px var(--surface-20);
   z-index: -1;
-  transition: 0.35s var(--ease);
+  transition: 0.45s var(--ease);
 }
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--sh-3);
+  transform: translateY(-4px);
+  box-shadow: var(--sh-2), var(--sh-3);
+  border-color: var(--medium-20);
 }
 .card:hover::before {
-  box-shadow: 8px 11px 0 -1px var(--surface-20);
+  box-shadow: 9px 13px 0 -1px var(--surface-20);
 }
 .card h3 {
   font-family: "Google Sans";

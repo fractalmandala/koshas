@@ -88,3 +88,38 @@
 **Rationale:** SQLite has no native vector similarity operations. sqlite-vss is unmaintained and has compatibility issues with recent SQLite versions. A viable path requires either a Tauri-side Rust in-memory cosine similarity layer or a dedicated vector database. Neither is justified for v1 scope.
 **Impact:** "Same Vibe" search and natural-language queries are not available in v1. The `embedding BLOB` column remains in the items table for future use. AI enrichment pipeline (T-010) excludes embedding generation. This decision should be revisited for v2 with a concrete implementation plan.
 **ADR to update when resolved:** ADR-014
+
+## ADR-016: Image Thumbnail Generation
+
+**Decision:** Generate local thumbnails in the Tauri/Rust backend with the Rust `image` crate. The frontend displays generated files only; it does not generate persistent thumbnails with canvas.
+**Rationale:** Thumbnail generation is file I/O and CPU work that belongs in the backend. Rust keeps generation off the UI thread, works for imports and background enrichment, and can produce deterministic asset paths for the `items.thumbnail` field.
+**Scope:** v1 supports bounded thumbnails for raster image formats handled by `image` (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`). SVG thumbnails can reuse the original file path or a type icon until rasterization is explicitly needed.
+**Impact:** T-012 card UI consumes `thumbnail` paths and must handle placeholders. Backend capture/import work owns thumbnail creation, cache naming, and regeneration when source files change.
+
+## ADR-017: PDF Rendering
+
+**Decision:** Use PDF.js (`pdfjs-dist`) in the Svelte webview for the inline read-only PDF reader.
+**Rationale:** PDF.js is mature, browser-native, and keeps PDF viewing inside the existing frontend surface without adding a native viewer dependency. It supports page rendering, zoom, search hooks, and predictable fallback UI.
+**Trade-off:** Rendering large PDFs can be memory-intensive. The frontend should render lazily by page/viewport and avoid loading all pages at once.
+**Impact:** Backend stores file path and metadata such as page count. Frontend T-025 owns the PDF viewer component, lazy page rendering, loading states, and error handling.
+
+## ADR-018: DOC/DOCX Read-Only Viewing
+
+**Decision:** Use Mammoth for `.docx` read-only conversion to sanitized HTML. Legacy `.doc` inline conversion is deferred; v1 should provide a read-only fallback that opens the file via macOS/Quick Look or shows an unsupported legacy-format message with "Open externally."
+**Rationale:** `.docx` has a practical JavaScript conversion path suitable for a read-only viewer. Legacy `.doc` requires heavier native or office-suite conversion dependencies that are not justified for v1.
+**Trade-off:** `.docx` fidelity is text-first, not pixel-perfect. Complex layouts, comments, tracked changes, and embedded objects may not render fully.
+**Impact:** Frontend T-025 implements DOCX preview, sanitization, empty/error states, and the `.doc` fallback. Backend should not add a document-conversion sidecar in v1.
+
+## ADR-019: Enrichment Configuration Model
+
+**Decision:** Use a typed runtime configuration model: non-secret enrichment settings live in a JSON config file under the app data directory, prompt templates ship as versioned app resources with optional user overrides, and API keys/secrets are stored in macOS Keychain rather than plain environment files.
+**Rationale:** Koshas is a desktop app, so runtime configuration must persist outside build-time `.env` files and must not store secrets in exportable app config. This also keeps AI enrichment optional: missing keys or model paths disable only the affected job handlers.
+**Scope:** Config covers local model paths, provider selection, enrichment feature toggles, prompt template overrides, and retry/backoff settings. Development-only environment variables may override config paths, but production behavior reads from app config plus Keychain.
+**Impact:** Backend T-010 owns the typed config loader and passes resolved config to idempotent enrichment jobs. Preferences UI can expose safe non-secret settings later; secret entry must write to Keychain.
+
+## ADR-020: Graph-As-Navigation Validation
+
+**Decision:** Treat the visual graph as an unvalidated navigation assumption. Search and backlinks remain the primary committed navigation surfaces until a prototype validates that graph navigation provides real user value.
+**Validation Plan:** Before M3 implementation, test a lightweight graph prototype with a realistic local dataset and compare three tasks: finding a known item, finding related items, and rediscovering forgotten items. Capture time-to-item, completion rate, and qualitative confidence. A graph investment is justified only if it clearly improves related-item discovery or serendipity; it does not need to beat search for known-item retrieval.
+**Rationale:** The spec already notes that graph may be better as a discovery layer than a primary navigation layer. Deferring heavy graph UI until validation protects M3 scope.
+**Impact:** M3 should start with backlinks, filtered graph prototypes, and discovery workflows. Frontend should not overbuild force-directed navigation chrome until the validation result is reviewed by Product Lead and Design Head.

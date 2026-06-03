@@ -17,7 +17,7 @@ v1 targets a local-build desktop app for a single power user who wants to consol
 
 | Milestone | Scope | Dependencies | Status |
 |---|---|---|---|
-| **M1 — Data Layer + Collect Foundation** | Database, imports, search, groups, basic UI shell | None | Planned |
+| **M1 — Data Layer + Collect Foundation** | Database, imports, search, groups, basic UI shell | None | In progress |
 | **M2 — Notes Sheath** | Notebooks, editor modes, file sync, frontmatter, quick notes | M1 | Planned |
 | **M3 — Graph Sheath** | Bidirectional references, graph visualization, serendipity | M1, M2 | Planned |
 | **M4 — Polish & Release** | Onboarding, backup/restore, keyboard shortcuts, performance, first-launch flow | M1, M2, M3 | Planned |

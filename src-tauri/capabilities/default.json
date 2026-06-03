@@ -7,6 +7,10 @@
   ],
   "permissions": [
     "core:default",
-    "sql:default"
+    "core:event:default",
+    "deep-link:default",
+    "sql:default",
+    "fs:default",
+    "dialog:default"
   ]
 }

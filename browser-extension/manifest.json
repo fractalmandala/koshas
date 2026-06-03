@@ -1,0 +1,16 @@
+{
+	"manifest_version": 3,
+	"name": "Koshas Capture",
+	"description": "Send pages, selected text, and images to Koshas through the koshas:// custom URL protocol.",
+	"version": "0.1.0",
+	"permissions": ["contextMenus", "storage", "tabs"],
+	"host_permissions": ["<all_urls>"],
+	"action": {
+		"default_popup": "popup.html",
+		"default_title": "Koshas Capture"
+	},
+	"background": {
+		"service_worker": "src/background.js",
+		"type": "module"
+	}
+}
