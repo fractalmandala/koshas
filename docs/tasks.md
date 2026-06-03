@@ -165,6 +165,7 @@
 - `koshas://add?url=X` URL scheme handled by app.
 - Chrome sideloadable extension works.
 - Right-click → "Save to Koshas" sends URL + title + selection.
+- **App-not-running case handled:** If the app is closed when the extension fires, the extension popup shows a clear message ("Koshas is not open") with a "Launch Koshas" button. The URL is preserved in the extension's local storage for sending once the app starts. On app launch, pending URLs are processed automatically.
 
 ---
 
@@ -309,6 +310,8 @@
 - Smart Spaces display dynamic results from their query definition.
 - Spaces sidebar section shows all user spaces.
 - Empty states for spaces with no items.
+
+**Note:** Smart Spaces depend on the search query model from T-011 (search query serialization, filter representation). Manual Space CRUD is independent and can proceed before T-011. Smart Spaces require T-011's query model to be defined first. Coordinate with T-011 before implementing Smart Space query serialization.
 
 ---
 
